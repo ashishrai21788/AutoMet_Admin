@@ -56,7 +56,8 @@ async function request<T>(path: string, init: RequestInit & { business?: boolean
   }
   const body = await res.json().catch(() => ({}))
   // A 401 on a signed-in request means the session ended; a failed sign-in is also a 401 but has no token yet.
-  if (res.status === 401 && token) useAuth.getState().logout()
+  // (changing the password can also answer 401 from an older server when the current password is wrong; that is a form error)
+  if (res.status === 401 && token && !path.endsWith('/auth/change-password')) useAuth.getState().logout()
   if (!res.ok) throw new ApiError(body?.message ?? `Request failed (${res.status})`, res.status, body?.errors ?? {})
   return (body?.data ?? body) as T
 }
