@@ -33,6 +33,8 @@ function currentAppId(): string | null {
 async function request<T>(path: string, init: RequestInit & { business?: boolean } = {}): Promise<T> {
   if (!API_CONFIGURED) throw new ApiError(NOT_CONFIGURED_MESSAGE, 0)
   const { business, ...fetchInit } = init
+  // An action with no data (such as confirming setup) still sends a JSON body, so every server accepts it.
+  if (fetchInit.body === undefined && ['POST', 'PUT', 'PATCH'].includes(fetchInit.method ?? '')) fetchInit.body = '{}'
   const token = useAuth.getState().session?.token
   const appId = business ? currentAppId() : null
   let res: Response
