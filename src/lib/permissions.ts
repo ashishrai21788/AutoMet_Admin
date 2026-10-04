@@ -2,8 +2,14 @@ import type { AdminUser, Role } from './types'
 
 /** Mirrors AutoMet_Webend_Apis/lib/adminPermissions.js. The server enforces these; the screens only hide what a role cannot do. */
 export type Permission =
-  | 'dashboard.view'
+  // platform: the owner of AutoMet (super admin) only
   | 'clients.manage'
+  | 'platform.billing'
+  | 'platform.team'
+  | 'platform.audit'
+  | 'platform.settings'
+  // business: a business's own staff, for their own business only
+  | 'dashboard.view'
   | 'drivers.view'
   | 'drivers.manage'
   | 'vehicles.view'
@@ -21,15 +27,17 @@ export type Permission =
   | 'trips.manage'
   | 'support.manage'
 
-const ALL: Permission[] = [
-  'dashboard.view', 'clients.manage', 'drivers.view', 'drivers.manage', 'vehicles.view', 'vehicles.manage',
+const PLATFORM: Permission[] = ['clients.manage', 'platform.billing', 'platform.team', 'platform.audit', 'platform.settings']
+
+const BUSINESS: Permission[] = [
+  'dashboard.view', 'drivers.view', 'drivers.manage', 'vehicles.view', 'vehicles.manage',
   'documents.view', 'verification.review', 'riders.view', 'trips.view', 'pricing.manage', 'payments.view',
   'settings.manage', 'team.manage', 'audit.view', 'riders.manage', 'trips.manage', 'support.manage',
 ]
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  super_admin: ALL,
-  client_admin: ALL.filter((p) => p !== 'clients.manage'),
+  super_admin: PLATFORM,
+  client_admin: BUSINESS,
   operations: [
     'dashboard.view', 'drivers.view', 'drivers.manage', 'vehicles.view', 'vehicles.manage', 'documents.view',
     'verification.review', 'riders.view', 'trips.view', 'riders.manage', 'trips.manage', 'support.manage',

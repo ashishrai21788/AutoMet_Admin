@@ -6,6 +6,10 @@ export default function Modal({
   title, onClose, children, wide, footer,
 }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; footer?: ReactNode }) {
   const panel = useRef<HTMLDivElement>(null)
+  // Callers pass a new onClose function on every render. If the effect below depended on it, every keystroke in a form inside
+  // the dialog would re-run it: focus would jump back to the first field and then to the button that opened the dialog.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose })
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
@@ -14,7 +18,7 @@ export default function Modal({
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
       if (e.key === 'Tab' && panel.current) {
         const items = [...panel.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])')]
         if (items.length === 0) return
@@ -29,7 +33,7 @@ export default function Modal({
       document.body.style.overflow = overflow
       previous?.focus()
     }
-  }, [onClose])
+  }, [])
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>

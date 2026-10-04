@@ -1,10 +1,10 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Copy } from 'lucide-react'
 import { api, ApiError } from '@/api'
-import { useAuth } from '@/store/auth'
 import type { Business, CreatedBusiness, NewBusinessInput } from '@/lib/types'
+import EditBusinessModal from '@/components/EditBusinessModal'
 import SecretNotice from '@/components/SecretNotice'
 import Modal from '@/components/Modal'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
@@ -27,8 +27,6 @@ function localErrors(f: NewBusinessInput): Record<string, string> {
 }
 
 export default function Businesses() {
-  const setActiveTenant = useAuth((s) => s.setActiveTenant)
-  const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
   const confirm = useConfirm()
@@ -73,15 +71,6 @@ export default function Businesses() {
   }
 
   const [editing, setEditing] = useState<Business | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', appName: '', city: '', plan: 'trial' as Business['plan'] })
-  const edit = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: Parameters<typeof api.businesses.update>[1] }) => api.businesses.update(id, input),
-    onSuccess: (b) => { qc.invalidateQueries({ queryKey: ['businesses'] }); qc.invalidateQueries({ queryKey: ['platform-overview'] }); setEditing(null); toast.success(`${b.name} was updated`) },
-    onError: (e) => { if (!(e instanceof ApiError) || Object.keys(e.fieldErrors).length === 0) toast.error(e.message) },
-  })
-  function openEdit(b: Business) { setEditForm({ name: b.name, appName: b.appName, city: b.city ?? '', plan: b.plan }); edit.reset(); setEditing(b) }
-
-  function open(b: Business) { setActiveTenant(b.appId); navigate('/') }
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -99,8 +88,8 @@ export default function Businesses() {
     { header: 'Setup', cell: (b) => b.setup ? (b.setup.complete ? <Badge kind="ok">Complete</Badge> : <span className="text-xs"><strong>{b.setup.percent}%</strong> · next: {b.setup.nextStep}</span>) : '—' },
     { header: 'Actions', hideLabel: true, className: 'text-right', cell: (b) => (
       <div className="flex justify-end gap-2">
-        <Button variant="ghost" onClick={() => open(b)}>Open dashboard</Button>
-        <Button variant="ghost" onClick={() => openEdit(b)}>Edit</Button>
+        <Link to={`/businesses/${b.appId}`}><Button variant="ghost">Manage</Button></Link>
+        <Button variant="ghost" onClick={() => setEditing(b)}>Edit</Button>
         <Button variant={b.status === 'suspended' ? 'ghost' : 'danger'} loading={changeStatus.isPending && changeStatus.variables?.id === b.appId} onClick={() => toggle(b)}>{b.status === 'suspended' ? 'Activate' : 'Suspend'}</Button>
       </div>
     ) },
@@ -123,21 +112,7 @@ export default function Businesses() {
         />
       )}
 
-      {editing && (
-        <Modal title={`Edit ${editing.name}`} onClose={() => setEditing(null)}
-          footer={<><Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button><Button type="submit" form="edit-business" loading={edit.isPending}>Save</Button></>}>
-          <form id="edit-business" noValidate className="space-y-4" onSubmit={(e) => { e.preventDefault(); edit.mutate({ id: editing.appId, input: { name: editForm.name.trim(), appName: editForm.appName.trim(), city: editForm.city.trim(), plan: editForm.plan } }) }}>
-            <p className="text-xs text-muted">App ID <span className="font-mono">{editing.appId}</span> and package name <span className="font-mono">{editing.packageName}</span> are fixed once a business is created.</p>
-            <TextField label="Business name" value={editForm.name} onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); edit.reset() }} error={edit.error instanceof ApiError ? edit.error.fieldErrors.name : undefined} />
-            <TextField label="App name" value={editForm.appName} onChange={(e) => { setEditForm({ ...editForm, appName: e.target.value }); edit.reset() }} error={edit.error instanceof ApiError ? edit.error.fieldErrors.appName : undefined} />
-            <TextField label="City" value={editForm.city} onChange={(e) => { setEditForm({ ...editForm, city: e.target.value }); edit.reset() }} error={edit.error instanceof ApiError ? edit.error.fieldErrors.city : undefined} />
-            <SelectField label="Plan" value={editForm.plan} onChange={(e) => setEditForm({ ...editForm, plan: e.target.value as Business['plan'] })} error={edit.error instanceof ApiError ? edit.error.fieldErrors.plan : undefined}>
-              <option value="trial">Trial</option><option value="standard">Standard</option><option value="enterprise">Enterprise</option>
-            </SelectField>
-            {edit.isError && !(edit.error instanceof ApiError && Object.keys(edit.error.fieldErrors).length) && <p role="alert" className="text-sm text-danger">{edit.error.message}</p>}
-          </form>
-        </Modal>
-      )}
+      {editing && <EditBusinessModal business={editing} onClose={() => setEditing(null)} />}
 
       <Card>
         <div className="flex flex-wrap gap-3 border-b border-line p-4">

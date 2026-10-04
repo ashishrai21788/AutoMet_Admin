@@ -9,6 +9,11 @@ import Login from '@/pages/Login'
 import Businesses from '@/pages/Businesses'
 import Platform from '@/pages/Platform'
 import PlatformAudit from '@/pages/PlatformAudit'
+import BusinessDetail from '@/pages/BusinessDetail'
+import Plans from '@/pages/Plans'
+import Revenue from '@/pages/Revenue'
+import PlatformTeam from '@/pages/PlatformTeam'
+import PlatformSettings from '@/pages/PlatformSettings'
 import Dashboard from '@/pages/Dashboard'
 import Regions from '@/pages/Regions'
 import Categories from '@/pages/Categories'
@@ -52,9 +57,16 @@ export default function App() {
                 <Route path="*" element={<NotFound />} />
                 <Route element={<RequirePermission permission="clients.manage" />}>
                   <Route path="businesses" element={<Businesses />} />
+                  <Route path="businesses/:id" element={<BusinessDetail />} />
                   <Route path="platform" element={<Platform />} />
-                  <Route path="platform-audit" element={<PlatformAudit />} />
                 </Route>
+                <Route element={<RequirePermission permission="platform.billing" />}>
+                  <Route path="plans" element={<Plans />} />
+                  <Route path="revenue" element={<Revenue />} />
+                </Route>
+                <Route element={<RequirePermission permission="platform.team" />}><Route path="platform-team" element={<PlatformTeam />} /></Route>
+                <Route element={<RequirePermission permission="platform.audit" />}><Route path="platform-audit" element={<PlatformAudit />} /></Route>
+                <Route element={<RequirePermission permission="platform.settings" />}><Route path="platform-settings" element={<PlatformSettings />} /></Route>
                 {/* every page below works on one business; the super admin picks it first */}
                 <Route element={<BusinessGate />}>
                   <Route element={<RequirePermission permission="dashboard.view" />}>

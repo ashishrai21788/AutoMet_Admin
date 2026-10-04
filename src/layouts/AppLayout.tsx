@@ -1,30 +1,40 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
   BadgeCheck, BarChart3, Bell, Building2, Calculator, Car, CarFront, CircleUserRound, Gauge, History, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
-  LifeBuoy, Map as MapIcon, Route, ShieldCheck, Settings, SlidersHorizontal, UserRound, Users, X,
+  LifeBuoy, Layers, Map as MapIcon, Route, ShieldCheck, Settings, SlidersHorizontal, UserCog, UserRound, Users, Wallet, X,
 } from 'lucide-react'
 import { api } from '@/api'
 import { useAlerts } from '@/api/hooks'
 import { useAuth } from '@/store/auth'
 import { useUi } from '@/store/ui'
 import { can, isSuperAdmin, ROLE_LABEL, type Permission } from '@/lib/permissions'
-import { Badge } from '@/components/ui'
 import ErrorBoundary from '@/components/ErrorBoundary'
 
 type Icon = typeof MapPin
-interface NavItem { to: string; label: string; icon: Icon; permission: Permission; end?: boolean }
+interface NavItem { to: string; label: string; icon: Icon; permission?: Permission; end?: boolean }
+
+const PLATFORM_NAV: NavItem[] = [
+  { to: '/platform', label: 'Platform Overview', icon: Gauge, permission: 'clients.manage' },
+  { to: '/businesses', label: 'Client Businesses', icon: Building2, permission: 'clients.manage' },
+  { to: '/plans', label: 'Plans & Subscriptions', icon: Layers, permission: 'platform.billing' },
+  { to: '/revenue', label: 'Revenue & Billing', icon: Wallet, permission: 'platform.billing' },
+  { to: '/platform-team', label: 'Platform Team', icon: Users, permission: 'platform.team' },
+  { to: '/platform-audit', label: 'Audit & Security', icon: History, permission: 'platform.audit' },
+  { to: '/platform-settings', label: 'Platform Settings', icon: Settings, permission: 'platform.settings' },
+  { to: '/account', label: 'My Profile', icon: CircleUserRound },
+]
 
 const BUSINESS_NAV: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view', end: true },
-  { to: '/regions', label: 'Regions', icon: MapPin, permission: 'dashboard.view' },
+  { to: '/', label: 'Business Dashboard', icon: LayoutDashboard, permission: 'dashboard.view', end: true },
+  { to: '/regions', label: 'Service Regions', icon: MapPin, permission: 'dashboard.view' },
   { to: '/categories', label: 'Vehicle Categories', icon: Car, permission: 'dashboard.view' },
   { to: '/pricing', label: 'Pricing & Fare Rules', icon: Calculator, permission: 'dashboard.view' },
   { to: '/live-map', label: 'Live Map', icon: MapIcon, permission: 'dashboard.view' },
-  { to: '/trips', label: 'Trips', icon: Route, permission: 'trips.view' },
-  { to: '/reports', label: 'Reports', icon: BarChart3, permission: 'trips.view' },
+  { to: '/trips', label: 'Rides & Trips', icon: Route, permission: 'trips.view' },
+  { to: '/reports', label: 'Reports & Analytics', icon: BarChart3, permission: 'trips.view' },
   { to: '/drivers', label: 'Drivers', icon: Users, permission: 'drivers.view' },
   { to: '/riders', label: 'Riders', icon: UserRound, permission: 'riders.view' },
   { to: '/vehicles', label: 'Vehicles', icon: CarFront, permission: 'vehicles.view' },
@@ -33,8 +43,9 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/alerts', label: 'Alerts', icon: Bell, permission: 'dashboard.view' },
   { to: '/ride-settings', label: 'Ride Settings', icon: SlidersHorizontal, permission: 'dashboard.view' },
   { to: '/audit', label: 'Audit Log', icon: History, permission: 'audit.view' },
+  { to: '/team', label: 'Team Management', icon: UserCog, permission: 'team.manage' },
   { to: '/settings', label: 'Business Settings', icon: Settings, permission: 'settings.manage' },
-  { to: '/account', label: 'Admin Profile', icon: CircleUserRound, permission: 'dashboard.view' },
+  { to: '/account', label: 'My Profile', icon: CircleUserRound },
 ]
 
 /** Open critical and warning alerts, next to the Alerts menu item. Quiet when there are none or the list cannot be read. */
@@ -52,7 +63,7 @@ function AlertCount({ mini }: { mini: boolean }) {
 }
 
 export default function AppLayout() {
-  const { session, activeTenantId, setActiveTenant, logout } = useAuth()
+  const { session, logout } = useAuth()
   const { collapsed, toggleCollapsed } = useUi()
   const user = session!.user
   const navigate = useNavigate()
@@ -63,12 +74,12 @@ export default function AppLayout() {
   const setOpen = (v: boolean) => setOpenOn(v ? location.pathname : null)
   const superAdmin = isSuperAdmin(user)
 
-  const businesses = useQuery({ queryKey: ['businesses'], queryFn: api.businesses.list })
-  const currentId = superAdmin ? activeTenantId : user.tenantId
-  const current = businesses.data?.find((b) => b.appId === currentId)
+  // a business user's own business, for the name shown in the top bar (the platform owner has none)
+  const businesses = useQuery({ queryKey: ['businesses'], queryFn: api.businesses.list, enabled: !superAdmin })
+  const current = businesses.data?.find((b) => b.appId === user.tenantId)
 
 
-  const items = BUSINESS_NAV.filter((n) => can(user, n.permission))
+  const items = BUSINESS_NAV.filter((n) => !n.permission || can(user, n.permission))
   const link = (n: NavItem, mini: boolean) => (
     <NavLink
       key={n.to} to={n.to} end={n.end} title={mini ? n.label : undefined}
@@ -93,17 +104,10 @@ export default function AppLayout() {
         {!mini && <div className="text-sm font-semibold leading-tight">AutoMet<br /><span className="font-normal text-muted">Admin</span></div>}
       </div>
       <nav aria-label="Main" className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-3">
-        {superAdmin && (
-          <>
-            {!mini && <p className="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-muted">Platform</p>}
-            {link({ to: '/platform', label: 'Platform Overview', icon: Gauge, permission: 'clients.manage' }, mini)}
-            {link({ to: '/businesses', label: 'Businesses', icon: Building2, permission: 'clients.manage' }, mini)}
-            {link({ to: '/platform-audit', label: 'Platform Audit', icon: History, permission: 'clients.manage' }, mini)}
-            {!mini && <p className="px-3 pb-1 pt-4 text-xs font-medium uppercase tracking-wide text-muted">{current ? current.name : 'Business'}</p>}
-            {mini && <hr className="my-2 border-line" />}
-          </>
-        )}
-        {items.map((n) => link(n, mini))}
+        {/* the platform owner manages businesses; a business's own screens (drivers, trips, pricing...) belong to its admins */}
+        {superAdmin
+          ? PLATFORM_NAV.filter((n) => !n.permission || can(user, n.permission)).map((n) => link(n, mini))
+          : items.map((n) => link(n, mini))}
       </nav>
       <div className="border-t border-line p-3">
         <button
@@ -152,16 +156,7 @@ export default function AppLayout() {
           </button>
           <div className="flex-1" />
           {superAdmin ? (
-            <div className="flex items-center gap-2">
-              <label htmlFor="business-select" className="sr-only">Business</label>
-              <select
-                id="business-select" value={activeTenantId ?? ''} onChange={(e) => { setActiveTenant(e.target.value || null); navigate('/') }}
-                className="max-w-[14rem] rounded-lg border border-line bg-bg px-3 py-1.5 text-sm outline-none focus:border-brand"
-              >
-                <option value="">Select a business…</option>
-                {businesses.data?.map((b) => <option key={b.appId} value={b.appId}>{b.name}</option>)}
-              </select>
-            </div>
+            <span className="text-sm text-muted">Platform owner</span>
           ) : current ? (
             <div className="flex items-center gap-2 text-sm">
               <span className="font-medium">{current.name}</span>
@@ -169,13 +164,6 @@ export default function AppLayout() {
             </div>
           ) : null}
         </header>
-
-        {superAdmin && current && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-brand/10 px-4 py-1.5 text-xs">
-            <span>Managing <strong>{current.name}</strong> <Badge kind={current.status === 'suspended' ? 'bad' : current.status === 'trial' ? 'warn' : 'ok'}>{current.status}</Badge></span>
-            <Link to="/businesses" className="underline">Back to all businesses</Link>
-          </div>
-        )}
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="mx-auto max-w-6xl"><ErrorBoundary resetKey={location.pathname}><Outlet /></ErrorBoundary></div>

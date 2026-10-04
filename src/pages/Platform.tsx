@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { CheckCircle2, MinusCircle, XCircle } from 'lucide-react'
 import { platform } from '@/api'
-import { useAuth } from '@/store/auth'
+import { fmtMoney } from '@/lib/labels'
 import { fmtDateTime } from '@/lib/labels'
 import type { PlatformBusiness, PlatformOverview } from '@/lib/types'
 import DataTable, { type Column } from '@/components/DataTable'
@@ -41,8 +41,7 @@ function IntegrationList({ i }: { i: Integrations }) {
 }
 
 export default function Platform() {
-  const navigate = useNavigate()
-  const setActiveTenant = useAuth((s) => s.setActiveTenant)
+  const revenue = useQuery({ queryKey: ['platform-revenue', {}], queryFn: () => platform.revenue() })
   const data = useQuery({ queryKey: ['platform-overview'], queryFn: platform.overview, refetchInterval: 60000 })
 
   if (data.isLoading) return <Spinner />
@@ -57,7 +56,7 @@ export default function Platform() {
     { header: 'Riders', cell: (b) => <span className="text-sm tabular-nums">{b.riders.total}<span className="text-xs text-muted"> · +{b.riders.newThisWeek} this week</span></span> },
     { header: 'Trips', cell: (b) => <span className="text-sm tabular-nums">{b.trips.requestedToday} today<span className="text-xs text-muted"> · {b.trips.active} active · {b.trips.last7Days} in 7 d</span></span> },
     { header: 'Admins', cell: (b) => <span className="text-sm tabular-nums">{b.admins}</span> },
-    { header: 'Actions', hideLabel: true, className: 'text-right', cell: (b) => <Button variant="ghost" onClick={() => { setActiveTenant(b.appId); navigate('/') }}>Open dashboard</Button> },
+    { header: 'Actions', hideLabel: true, className: 'text-right', cell: (b) => <Link to={`/businesses/${b.appId}`}><Button variant="ghost">Manage</Button></Link> },
   ]
 
   const needsAttention = businesses.filter((b) => b.status !== 'suspended' && !b.setup.complete).length
@@ -65,6 +64,18 @@ export default function Platform() {
   return (
     <>
       <PageHeader title="Platform overview" subtitle={`All businesses at a glance. Counts only; open a business to see its own records. Updated ${fmtDateTime(data.data!.generatedAt)}.`} action={<Button variant="ghost" loading={data.isFetching} onClick={() => data.refetch()}>Refresh</Button>} />
+
+      {revenue.data && (
+        <>
+          <div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-semibold">AutoMet revenue</h2><Link to="/revenue" className="text-xs underline">Revenue & billing</Link></div>
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="Monthly recurring revenue" value={fmtMoney(revenue.data.mrr, revenue.data.currency)} hint={`${revenue.data.counts.recurring} paying · ${revenue.data.counts.trialing} on trial`} />
+            <Stat label="Net collected (12 months)" value={fmtMoney(revenue.data.netCollected, revenue.data.currency)} />
+            <Stat label="Outstanding" value={fmtMoney(revenue.data.outstanding, revenue.data.currency)} hint={revenue.data.overdue > 0 ? `${fmtMoney(revenue.data.overdue, revenue.data.currency)} overdue` : 'Nothing overdue'} />
+            <Stat label="Renewals in 30 days" value={revenue.data.counts.renewalsDue} hint={revenue.data.counts.renewalsOverdue ? `${revenue.data.counts.renewalsOverdue} past due` : undefined} />
+          </div>
+        </>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Businesses" value={totals.businesses} hint={`${totals.active} active · ${totals.trial} trial · ${totals.suspended} suspended`} />

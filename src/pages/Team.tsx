@@ -14,8 +14,9 @@ const ASSIGNABLE: NewUserInput['role'][] = ['client_admin', 'operations', 'suppo
 const blank: NewUserInput = { name: '', email: '', role: 'operations' }
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export default function Team() {
-  const { user, tenantId, isSuper } = useScope()
+/** The team of one business: its admins and staff. `embedded` drops the page title, for use inside another page. */
+export function TeamManager({ tenantId, embedded = false }: { tenantId: string | null; embedded?: boolean }) {
+  const { user, isSuper } = useScope()
   const qc = useQueryClient()
   const toast = useToast()
   const confirm = useConfirm()
@@ -58,12 +59,14 @@ export default function Team() {
   if (!EMAIL_RE.test(form.email.trim())) local.email = 'Enter a valid email address'
   const fe = { ...(touched ? local : {}), ...(create.error instanceof ApiError ? create.error.fieldErrors : {}) }
   const needsBusiness = isSuper && !tenantId
+  // the platform owner manages a business's admin accounts only; the business's own admin manages everyone else
+  const roles: NewUserInput['role'][] = isSuper ? ['client_admin'] : ASSIGNABLE
 
   function submit(e: FormEvent) {
     e.preventDefault()
     setTouched(true)
     // the super admin adds people to the business selected in the top bar
-    if (Object.keys(local).length === 0) create.mutate({ ...form, name: form.name.trim(), email: form.email.trim(), tenantId: isSuper ? tenantId ?? undefined : undefined })
+    if (Object.keys(local).length === 0) create.mutate({ ...form, role: isSuper ? 'client_admin' : form.role, name: form.name.trim(), email: form.email.trim(), tenantId: isSuper ? tenantId ?? undefined : undefined })
   }
 
   async function toggle(u: AdminUser) {
@@ -85,7 +88,7 @@ export default function Team() {
     { header: 'Role', cell: (u) => <Badge kind={u.role === 'super_admin' ? 'warn' : 'neutral'}>{ROLE_LABEL[u.role]}</Badge> },
     ...(isSuper ? [{ header: 'Business', cell: (u: AdminUser) => businessName(u.tenantId) } satisfies Column<AdminUser>] : []),
     { header: 'Status', cell: (u) => <Badge kind={u.active === false ? 'bad' : 'ok'}>{u.active === false ? 'Inactive' : 'Active'}</Badge> },
-    { header: 'Actions', hideLabel: true, className: 'text-right', cell: (u) => u.role === 'super_admin' ? null : (
+    { header: 'Actions', hideLabel: true, className: 'text-right', cell: (u) => u.role === 'super_admin' || (isSuper && u.role !== 'client_admin') ? null : (
       <div className="flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={() => openEdit(u)}>Edit</Button>
         {u.id !== user.id && <Button variant="ghost" loading={reset.isPending && reset.variables === u.id} onClick={() => doReset(u)}>Reset password</Button>}
@@ -96,7 +99,9 @@ export default function Team() {
 
   return (
     <>
-      <PageHeader title="Team" subtitle="Admin accounts and their roles." action={<Button onClick={() => setShowForm(true)}>Add team member</Button>} />
+      {embedded
+        ? <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="font-semibold">Admins and team</h2><Button onClick={() => setShowForm(true)}>Add team member</Button></div>
+        : <PageHeader title="Team" subtitle="Admin accounts and their roles." action={<Button onClick={() => setShowForm(true)}>Add team member</Button>} />}
       {resetNotice && <SecretNotice title={resetNotice.title} email={resetNotice.email} password={resetNotice.password} onClose={() => setResetNotice(null)} />}
       {created && <SecretNotice title={`${created.name} was added`} email={created.email} password={created.temporaryPassword} onClose={() => setCreated(null)} />}
 
@@ -109,11 +114,11 @@ export default function Team() {
       {editing && (
         <Modal title={`Edit ${editing.name}`} onClose={() => setEditing(null)}
           footer={<><Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button><Button type="submit" form="edit-member" loading={update.isPending}>Save</Button></>}>
-          <form id="edit-member" noValidate className="space-y-4" onSubmit={(e) => { e.preventDefault(); update.mutate({ id: editing.id, input: { ...(editForm.name.trim() !== editing.name ? { name: editForm.name.trim() } : {}), ...(editForm.role !== editing.role && editing.id !== user.id ? { role: editForm.role } : {}) } }) }}>
+          <form id="edit-member" noValidate className="space-y-4" onSubmit={(e) => { e.preventDefault(); update.mutate({ id: editing.id, input: { ...(editForm.name.trim() !== editing.name ? { name: editForm.name.trim() } : {}), ...(!isSuper && editForm.role !== editing.role && editing.id !== user.id ? { role: editForm.role } : {}) } }) }}>
             <TextField label="Name" value={editForm.name} onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); update.reset() }} error={update.error instanceof ApiError ? update.error.fieldErrors.name : undefined} />
-            <SelectField label="Role" value={editForm.role} disabled={editing.id === user.id} onChange={(e) => { setEditForm({ ...editForm, role: e.target.value as NewUserInput['role'] }); update.reset() }} error={update.error instanceof ApiError ? update.error.fieldErrors.role : undefined}>
+            {!isSuper && <SelectField label="Role" value={editForm.role} disabled={editing.id === user.id} onChange={(e) => { setEditForm({ ...editForm, role: e.target.value as NewUserInput['role'] }); update.reset() }} error={update.error instanceof ApiError ? update.error.fieldErrors.role : undefined}>
               {ASSIGNABLE.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-            </SelectField>
+            </SelectField>}
             {editing.id === user.id ? <p className="text-xs text-muted">You cannot change your own role.</p> : <p className="text-xs text-muted">Changing the role signs this person out; they sign in again with the new access.</p>}
             {update.isError && !(update.error instanceof ApiError && Object.keys(update.error.fieldErrors).length) && <p role="alert" className="text-sm text-danger">{update.error.message}</p>}
           </form>
@@ -127,8 +132,8 @@ export default function Team() {
             <form id="add-member" onSubmit={submit} noValidate className="space-y-4">
               <TextField label="Name" required value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); create.reset() }} error={fe.name} />
               <TextField label="Email" type="email" required value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); create.reset() }} error={fe.email} />
-              <SelectField label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as NewUserInput['role'] })}>
-                {ASSIGNABLE.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+              <SelectField label="Role" value={isSuper ? 'client_admin' : form.role} disabled={isSuper} hint={isSuper ? 'You add the business’s admin. They add their own staff.' : undefined} onChange={(e) => setForm({ ...form, role: e.target.value as NewUserInput['role'] })}>
+                {roles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
               </SelectField>
               {create.isError && !(create.error instanceof ApiError && Object.keys(create.error.fieldErrors).length) && <p role="alert" className="text-sm text-danger">{create.error.message}</p>}
             </form>
@@ -137,4 +142,9 @@ export default function Team() {
       )}
     </>
   )
+}
+
+export default function Team() {
+  const { tenantId } = useScope()
+  return <TeamManager tenantId={tenantId} />
 }

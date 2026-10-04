@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -113,6 +113,13 @@ export async function uploadFile<T>(path: string, file: File, field = 'file'): P
   if (res.status === 401 && token) useAuth.getState().logout()
   if (!res.ok) throw new ApiError(body?.message ?? `Upload failed (${res.status})`, res.status, body?.errors ?? {})
   return (body?.data ?? body) as T
+}
+
+const qsOf = (params: Record<string, string | number | undefined>) => {
+  const p = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') p.set(k, String(v))
+  const s = p.toString()
+  return s ? `?${s}` : ''
 }
 
 const json = (body: unknown) => JSON.stringify(body)
@@ -237,6 +244,33 @@ export function uploadDocument(
 
 export const platform = {
   overview: () => request<PlatformOverview>('/api/admin/platform/overview'),
+  revenue: (params: Record<string, string | undefined> = {}) => request<RevenueSummary>(`/api/admin/platform/revenue/summary${qsOf(params)}`),
+  invoices: (params: Record<string, string | number | undefined>) => request<Paged<Invoice>>(`/api/admin/platform/invoices${qsOf(params)}`),
+  plans: () => request<Plan[]>('/api/admin/platform/plans'),
+  createPlan: (input: PlanInput) => request<Plan>('/api/admin/platform/plans', { method: 'POST', body: json(input) }),
+  updatePlan: (id: string, input: Partial<PlanInput>) => request<Plan>(`/api/admin/platform/plans/${id}`, { method: 'PATCH', body: json(input) }),
+  settings: () => request<PlatformSettings>('/api/admin/platform/settings'),
+  saveSettings: (input: Partial<Omit<PlatformSettings, 'currency'>>) => request<PlatformSettings>('/api/admin/platform/settings', { method: 'PUT', body: json(input) }),
+  billing: (appId: string) => request<BusinessBilling>(`/api/admin/tenants/${appId}/billing`),
+  assignSubscription: (appId: string, input: AssignSubscriptionInput) =>
+    request<{ subscription: Subscription; setupInvoice: Invoice | null }>(`/api/admin/tenants/${appId}/subscription`, { method: 'PUT', body: json(input) }),
+  renewSubscription: (appId: string, invoice: boolean) =>
+    request<{ subscription: Subscription; invoice: Invoice | null }>(`/api/admin/tenants/${appId}/subscription/renew`, { method: 'POST', body: json({ invoice }) }),
+  cancelSubscription: (appId: string, reason: string) =>
+    request<{ subscription: Subscription }>(`/api/admin/tenants/${appId}/subscription/cancel`, { method: 'POST', body: json({ reason }) }),
+  issueInvoice: (appId: string, input: { type?: InvoiceType; amount?: number | string; periodStart?: string; periodEnd?: string; dueDate?: string; description?: string }) =>
+    request<Invoice>(`/api/admin/tenants/${appId}/invoices`, { method: 'POST', body: json(input) }),
+  payInvoice: (id: string, input: { paymentMethod: PaymentMethod; reference?: string; paidAt?: string }) =>
+    request<Invoice>(`/api/admin/invoices/${id}/pay`, { method: 'POST', body: json(input) }),
+  voidInvoice: (id: string, reason: string) => request<Invoice>(`/api/admin/invoices/${id}/void`, { method: 'POST', body: json({ reason }) }),
+  refundInvoice: (id: string, input: { amount: number | string; reason: string }) => request<Invoice>(`/api/admin/invoices/${id}/refund`, { method: 'POST', body: json(input) }),
+  team: {
+    list: () => request<AdminUser[]>('/api/admin/platform/team'),
+    create: (input: { name: string; email: string }) => request<CreatedUser>('/api/admin/platform/team', { method: 'POST', body: json(input) }),
+    rename: (id: string, name: string) => request<AdminUser>(`/api/admin/platform/team/${id}`, { method: 'PATCH', body: json({ name }) }),
+    setActive: (id: string, active: boolean) => request<AdminUser>(`/api/admin/platform/team/${id}/active`, { method: 'PATCH', body: json({ active }) }),
+    resetPassword: (id: string) => request<CreatedUser>(`/api/admin/platform/team/${id}/reset-password`, { method: 'POST' }),
+  },
   audit: (params: Record<string, string | number | undefined>) => request<PlatformAuditPage>(`/api/admin/platform/audit${qs(params)}`),
 }
 

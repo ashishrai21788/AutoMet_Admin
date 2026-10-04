@@ -667,3 +667,110 @@ export interface IssuePage extends Paged<IssueItem> { open: number }
 
 export interface PlatformAuditEntry extends AuditEntry { tenantId: string | null; businessName: string }
 export type PlatformAuditPage = Paged<PlatformAuditEntry>
+
+// ---- platform revenue: what businesses pay AutoMet (never a business's own ride money) ----
+
+export type InvoiceStatus = 'issued' | 'paid' | 'void'
+export type InvoiceType = 'subscription' | 'setup_fee' | 'other'
+export type PaymentMethod = 'bank_transfer' | 'upi' | 'card' | 'cash' | 'other'
+export type SubscriptionStatus = 'trialing' | 'active' | 'cancelled'
+export type Cycle = 'monthly' | 'yearly'
+
+export interface Refund { at: string; amount: number; reason: string; by: string }
+
+export interface Invoice {
+  id: string
+  number: string
+  appId: string
+  businessName: string
+  type: InvoiceType
+  description: string
+  periodStart: string | null
+  periodEnd: string | null
+  amount: number
+  currency: string
+  status: InvoiceStatus
+  overdue: boolean
+  issuedAt: string
+  dueDate: string
+  paidAt: string | null
+  paymentMethod: PaymentMethod | null
+  reference: string
+  refundedAmount: number
+  refunds: Refund[]
+  netPaid: number
+  voidedAt: string | null
+  voidReason: string
+}
+
+export interface Plan {
+  id: string
+  name: string
+  description: string
+  price: number
+  cycle: Cycle
+  setupFee: number
+  trialDays: number | null
+  active: boolean
+  currency: string
+  subscribers: number
+}
+
+export interface PlanInput { name: string; description?: string; price: number | string; cycle: Cycle; setupFee?: number | string; trialDays?: number | string | null; active?: boolean }
+
+export interface Subscription {
+  planId: string | null
+  planName: string | null
+  price: number
+  cycle: Cycle
+  currency: string
+  setupFee: number
+  status: SubscriptionStatus
+  startDate: string | null
+  trialEndsAt: string | null
+  renewalDate: string | null
+  cancelledAt: string | null
+  cancelReason: string
+  notes: string
+  /** counts toward monthly recurring revenue */
+  recurring: boolean
+}
+
+export interface BusinessBilling {
+  subscription: Subscription | null
+  businessStatus: Business['status']
+  totals: { billed: number; collected: number; refunded: number; outstanding: number }
+  invoices: Invoice[]
+}
+
+export interface AssignSubscriptionInput { planId: string; price?: number | string; startDate?: string; trial?: boolean; trialDays?: number | string; notes?: string; issueSetupInvoice?: boolean }
+
+export interface PlatformSettings { companyName: string; billingEmail: string; invoiceDueDays: number; defaultTrialDays: number; invoiceNotes: string; currency: string }
+
+export interface RevenueSummary {
+  currency: string
+  mrr: number
+  arr: number
+  billed: number
+  collected: number
+  refunded: number
+  netCollected: number
+  outstanding: number
+  overdue: number
+  counts: {
+    businesses: number; suspended: number; activeSubscriptions: number; trialing: number; cancelled: number; withoutSubscription: number
+    recurring: number; renewalsDue: number; renewalsOverdue: number; overdueInvoices: number; outstandingInvoices: number
+  }
+  upcomingRenewals: { appId: string; name: string; renewalDate: string; status: SubscriptionStatus; planName: string | null; price: number; cycle: Cycle }[]
+  byPlan: { planId: string; name: string; price: number; cycle: Cycle; active: boolean; subscribers: number; mrr: number }[]
+  byBusiness: {
+    appId: string; name: string; status: Business['status']; subscriptionStatus: SubscriptionStatus | 'none'; planName: string | null
+    price: number | null; cycle: Cycle | null; mrr: number; renewalDate: string | null
+    billed: number; collected: number; refunded: number; outstanding: number; overdue: number
+  }[]
+  series: { month: string; billed: number; collected: number; refunded: number; net: number }[]
+  acquisition: { month: string; newBusinesses: number }[]
+  range: { from: string; to: string }
+  generatedAt: string
+  partial: boolean
+}
