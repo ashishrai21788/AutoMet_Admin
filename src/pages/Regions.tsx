@@ -5,13 +5,13 @@ import { api } from '@/api'
 import { useBusinessMutation, useGeo, useOverview, useRegions } from '@/api/hooks'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
-import { citiesFor, countryName, currenciesFor, statesFor, timezonesFor, type GeoData } from '@/lib/geo'
-import type { Business, Region } from '@/lib/types'
+import { cityCenter, citiesFor, countryName, currenciesFor, statesFor, timezonesFor, type GeoData } from '@/lib/geo'
+import type { Business, LocateResult, Region } from '@/lib/types'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
 import Modal from '@/components/Modal'
 import SetupGuide from '@/components/SetupGuide'
 import { useConfirm } from '@/components/feedback'
-import { Badge, Button, Card, ErrorState, PageHeader, SelectField, Spinner, TextField } from '@/components/ui'
+import { Alert, Badge, Button, Card, ErrorState, PageHeader, SelectField, Spinner, TextField } from '@/components/ui'
 
 // ---------------- market (country, currency, time zone) ----------------
 
@@ -96,6 +96,7 @@ function AddRegionsModal({ country, geo, onClose }: { country: string; geo: GeoD
   const [custom, setCustom] = useState('')
   const [filter, setFilter] = useState('')
   const [zoneName, setZoneName] = useState('')
+  const [radius, setRadius] = useState('15')
   const [touched, setTouched] = useState(false)
 
   const state = stateChoice === '__other' ? customState.trim() : stateChoice
@@ -116,12 +117,21 @@ function AddRegionsModal({ country, geo, onClose }: { country: string; geo: GeoD
   const local: Record<string, string> = {}
   if (!state) local.state = 'Choose or enter a state or province'
   if (picked.length === 0) local.cities = 'Select or add at least one city'
+  const radiusNum = Number(radius)
+  if (!(radius.trim() && Number.isFinite(radiusNum) && radiusNum >= 0.5 && radiusNum <= 200)) local.radiusKm = 'Enter a radius from 0.5 to 200 km'
   const fe = { ...(touched ? local : {}), ...add.fieldErrors }
 
   function submit(e: FormEvent) {
     e.preventDefault()
     setTouched(true)
-    if (Object.keys(local).length === 0) add.mutate({ state, cities: picked, zoneName: zoneName.trim() })
+    if (Object.keys(local).length === 0) {
+      // listed cities get their centre point automatically; a typed city has none until you set it on the region
+      const cities = picked.map((name) => {
+        const c = stateChoice === '__other' ? null : cityCenter(geo, country, stateChoice, name)
+        return c ? { name, lat: c.lat, lng: c.lng } : name
+      })
+      add.mutate({ state, cities, zoneName: zoneName.trim(), radiusKm: radius })
+    }
   }
 
   return (
@@ -138,6 +148,9 @@ function AddRegionsModal({ country, geo, onClose }: { country: string; geo: GeoD
             : <TextField label="Zone name (optional)" placeholder="All areas" value={zoneName} onChange={(e) => setZoneName(e.target.value)} maxLength={80} error={fe.zoneName} hint="For example Airport, Old town. Leave empty for the whole city." />}
         </div>
         {stateChoice === '__other' && <TextField label="Zone name (optional)" placeholder="All areas" value={zoneName} onChange={(e) => setZoneName(e.target.value)} maxLength={80} error={fe.zoneName} />}
+
+        <TextField label="Service radius (km)" type="number" min={0.5} max={200} step="any" value={radius} onChange={(e) => setRadius(e.target.value)} error={fe.radiusKm}
+          hint="Riders picked up within this distance of a city's centre are served by the region. You can change the centre and radius later." />
 
         <div>
           <span className="mb-1 block text-xs font-medium text-muted">Cities</span>
@@ -178,16 +191,91 @@ function AddRegionsModal({ country, geo, onClose }: { country: string; geo: GeoD
 
 function EditRegionModal({ region, onClose }: { region: Region; onClose: () => void }) {
   const [zoneName, setZoneName] = useState(region.zoneName)
-  const save = useBusinessMutation((zone: string) => api.business.updateRegion(region.id, { zoneName: zone }), { success: 'Region updated', onSuccess: onClose })
-  const local = zoneName.trim() ? '' : 'Zone name is required'
+  const [lat, setLat] = useState(region.center ? String(region.center.lat) : '')
+  const [lng, setLng] = useState(region.center ? String(region.center.lng) : '')
+  const [radius, setRadius] = useState(region.radiusKm != null ? String(region.radiusKm) : '')
+  const [touched, setTouched] = useState(false)
+  const save = useBusinessMutation(
+    (input: Parameters<typeof api.business.updateRegion>[1]) => api.business.updateRegion(region.id, input),
+    { success: 'Region updated', onSuccess: onClose },
+  )
+
+  const anyArea = lat.trim() !== '' || lng.trim() !== '' || radius.trim() !== ''
+  const local: Record<string, string> = {}
+  if (!zoneName.trim()) local.zoneName = 'Zone name is required'
+  if (anyArea) {
+    const la = Number(lat), lo = Number(lng), r = Number(radius)
+    if (!(lat.trim() && Number.isFinite(la) && la >= -90 && la <= 90)) local.center = 'Latitude must be -90 to 90'
+    else if (!(lng.trim() && Number.isFinite(lo) && lo >= -180 && lo <= 180)) local.center = 'Longitude must be -180 to 180'
+    if (!(radius.trim() && Number.isFinite(r) && r >= 0.5 && r <= 200)) local.radiusKm = 'Radius must be 0.5 to 200 km'
+  }
+  const fe = { ...(touched ? local : {}), ...save.fieldErrors }
+  const touch = () => save.reset()
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    setTouched(true)
+    if (Object.keys(local).length > 0) return
+    // empty area fields clear the area; otherwise centre and radius are saved together
+    save.mutate(anyArea
+      ? { zoneName: zoneName.trim(), center: { lat, lng }, radiusKm: radius }
+      : { zoneName: zoneName.trim(), center: null })
+  }
+
   return (
     <Modal title={`Edit ${region.city}`} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" form="edit-region" loading={save.isPending}>Save</Button></>}>
-      <form id="edit-region" noValidate onSubmit={(e) => { e.preventDefault(); if (!local) save.mutate(zoneName.trim()) }}>
-        <p className="mb-3 text-sm text-muted">{region.city}, {region.state}. The city and state cannot be changed; add a new region instead.</p>
-        <TextField label="Zone name" value={zoneName} maxLength={80} onChange={(e) => { setZoneName(e.target.value); save.reset() }} error={save.fieldErrors.zoneName ?? (save.isIdle ? undefined : local)} />
+      <form id="edit-region" noValidate onSubmit={submit} className="space-y-4">
+        <p className="text-sm text-muted">{region.city}, {region.state}. The city and state cannot be changed; add a new region instead.</p>
+        <TextField label="Zone name" value={zoneName} maxLength={80} onChange={(e) => { setZoneName(e.target.value); touch() }} error={fe.zoneName} />
+        <div>
+          <h3 className="mb-1 text-sm font-medium">Service area</h3>
+          <p className="mb-3 text-xs text-muted">Every pickup within the radius of the centre point is served by this region. Leave all three empty to remove the area.</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <TextField label="Centre latitude" type="number" step="any" value={lat} onChange={(e) => { setLat(e.target.value); touch() }} error={fe.center} />
+            <TextField label="Centre longitude" type="number" step="any" value={lng} onChange={(e) => { setLng(e.target.value); touch() }} />
+            <TextField label="Radius (km)" type="number" step="any" value={radius} onChange={(e) => { setRadius(e.target.value); touch() }} error={fe.radiusKm} />
+          </div>
+        </div>
       </form>
     </Modal>
+  )
+}
+
+// ---------------- check a location ----------------
+
+function LocateCard() {
+  const [lat, setLat] = useState('')
+  const [lng, setLng] = useState('')
+  const [result, setResult] = useState<LocateResult | null>(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function check(e: FormEvent) {
+    e.preventDefault()
+    if (busy) return
+    setError(''); setResult(null); setBusy(true)
+    try { setResult(await api.business.locate({ lat, lng })) } catch (err) { setError(err instanceof Error ? err.message : 'Could not check the location') } finally { setBusy(false) }
+  }
+
+  return (
+    <Card className="mt-6 p-5">
+      <h2 className="font-semibold">Check a location</h2>
+      <p className="mb-3 text-sm text-muted">Enter a pickup point to see which region would serve it, the same way ride requests are matched.</p>
+      <form onSubmit={check} noValidate className="flex flex-wrap items-end gap-3">
+        <TextField label="Latitude" type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} className="w-40" />
+        <TextField label="Longitude" type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} className="w-40" />
+        <Button type="submit" variant="ghost" loading={busy} disabled={!lat.trim() || !lng.trim()}>Check</Button>
+      </form>
+      <div className="mt-3" aria-live="polite">
+        {error && <Alert kind="error">{error}</Alert>}
+        {result && (
+          result.inside && result.region ? <Alert kind="info">Served by <strong>{result.region.city} ({result.region.zoneName})</strong>, {result.distanceKm} km from its centre.</Alert>
+          : result.serviceAreasSet ? <Alert kind="warn">Outside every service area. Ride requests from here would be refused.</Alert>
+          : <Alert kind="info">No region has a service area yet, so any pickup is accepted. Set a centre and radius on your regions to restrict service.</Alert>
+        )}
+      </div>
+    </Card>
   )
 }
 
@@ -238,6 +326,7 @@ export default function Regions() {
     { header: 'City', cell: (r) => <span className="font-medium">{r.city}</span> },
     { header: 'State / province', cell: (r) => r.state },
     { header: 'Zone', cell: (r) => r.zoneName },
+    { header: 'Service area', cell: (r) => (r.center && r.radiusKm ? `${r.radiusKm} km around ${r.center.lat.toFixed(3)}, ${r.center.lng.toFixed(3)}` : <Badge kind="warn">Not set</Badge>) },
     { header: 'Status', cell: (r) => <Badge kind={r.active ? 'ok' : 'neutral'}>{r.active ? 'Active' : 'Inactive'}</Badge> },
     ...(canEdit ? [{
       header: 'Actions', hideLabel: true, className: 'text-right',
@@ -273,6 +362,8 @@ export default function Regions() {
           />
         )}
       </Card>
+
+      {business.market && (regions.data?.length ?? 0) > 0 && <LocateCard />}
 
       {adding && business.market && <AddRegionsModal country={business.market.country} geo={geo} onClose={() => setAdding(false)} />}
       {editing && <EditRegionModal region={editing} onClose={() => setEditing(null)} />}

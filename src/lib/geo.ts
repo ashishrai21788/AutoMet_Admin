@@ -7,7 +7,7 @@ export interface Country { code: string; name: string; currencies: string[] }
 
 export interface GeoData {
   countries: Country[]
-  cities: { city: string; province: string; iso2: string; timezone: string }[]
+  cities: { city: string; province: string; iso2: string; timezone: string; lat: number; lng: number }[]
 }
 
 let loading: Promise<GeoData> | null = null
@@ -42,6 +42,12 @@ export function statesFor(geo: GeoData, country: string): string[] {
 
 export function citiesFor(geo: GeoData, country: string, state: string): string[] {
   return [...new Set(geo.cities.filter((c) => c.iso2 === country && c.province === state).map((c) => c.city))].sort((a, b) => a.localeCompare(b))
+}
+
+/** The centre point of a listed city, used as the default centre of a new region. */
+export function cityCenter(geo: GeoData, country: string, state: string, city: string): { lat: number; lng: number } | null {
+  const hit = geo.cities.find((c) => c.iso2 === country && c.province === state && c.city === city)
+  return hit && Number.isFinite(hit.lat) && Number.isFinite(hit.lng) ? { lat: hit.lat, lng: hit.lng } : null
 }
 
 export function countryName(geo: GeoData | undefined, code: string): string {

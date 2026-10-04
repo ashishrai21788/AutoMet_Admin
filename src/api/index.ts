@@ -1,6 +1,6 @@
 import type {
   AdminUser, Business, CancellationPolicy, Category, CategoryInput, CreatedBusiness, CreatedUser, FarePreview,
-  FareRule, FareRuleFields, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
+  FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -90,10 +90,13 @@ export const api = {
     completeSetup: () => request<SetupStatus>('/api/admin/business/setup/complete', { method: 'POST', business: true }),
 
     regions: () => request<Region[]>('/api/admin/business/regions', { business: true }),
-    addRegions: (input: { state: string; cities: string[]; zoneName: string }) =>
+    addRegions: (input: { state: string; cities: (string | { name: string; lat: number; lng: number })[]; zoneName: string; radiusKm: number | string }) =>
       request<{ created: Region[]; skipped: string[] }>('/api/admin/business/regions', { method: 'POST', body: json(input), business: true }),
-    updateRegion: (id: string, input: { zoneName?: string; active?: boolean }) =>
+    updateRegion: (id: string, input: { zoneName?: string; active?: boolean; center?: { lat: number | string; lng: number | string } | null; radiusKm?: number | string }) =>
       request<Region>(`/api/admin/business/regions/${id}`, { method: 'PATCH', body: json(input), business: true }),
+
+    locate: (point: { lat: number | string; lng: number | string }) =>
+      request<LocateResult>('/api/admin/business/regions/locate', { method: 'POST', body: json(point), business: true }),
 
     categories: () => request<Category[]>('/api/admin/business/categories', { business: true }),
     createCategory: (input: CategoryInput) =>

@@ -81,8 +81,18 @@ export interface Region {
   city: string
   zoneName: string
   active: boolean
+  /** The area the region covers: every point within radiusKm of the centre. Null until set. */
+  center: { lat: number; lng: number } | null
+  radiusKm: number | null
   createdAt: string
   updatedAt: string
+}
+
+export interface LocateResult {
+  serviceAreasSet: boolean
+  inside: boolean
+  region: Region | null
+  distanceKm: number | null
 }
 
 export const ICON_KEYS = ['car', 'suv', 'hatchback', 'premium', 'auto', 'bike', 'electric', 'van'] as const
