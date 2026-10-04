@@ -6,6 +6,7 @@ import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import { countryName } from '@/lib/geo'
 import type { Business } from '@/lib/types'
+import RequirementsCard from '@/components/RequirementsCard'
 import { Badge, Button, Card, ErrorState, PageHeader, Spinner, TextField } from '@/components/ui'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -77,6 +78,8 @@ export default function BusinessSettings() {
       </Card>
 
       <SettingsForm business={b} canEdit={canEdit} />
+
+      <RequirementsCard canEdit={canEdit} />
 
       {can(user, 'team.manage') && (
         <Card className="mt-6 flex flex-wrap items-center justify-between gap-3 p-5">

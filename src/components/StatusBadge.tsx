@@ -1,0 +1,33 @@
+import type { AccountStatus, DocumentStatus, VerificationStatus } from '@/lib/types'
+import { Badge } from './ui'
+
+/** Account status, verification status and document status are different things, so each has its own wording and colour. */
+
+export function AccountBadge({ status }: { status: AccountStatus }) {
+  const kind = status === 'ACTIVE' ? 'ok' : status === 'SUSPENDED' ? 'bad' : 'neutral'
+  const label = status === 'ACTIVE' ? 'Active' : status === 'SUSPENDED' ? 'Suspended' : 'Inactive'
+  return <Badge kind={kind}>{label}</Badge>
+}
+
+export const VERIFICATION_LABEL: Record<VerificationStatus, string> = {
+  INCOMPLETE: 'Incomplete',
+  PENDING_REVIEW: 'Pending review',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  EXPIRED: 'Expired',
+}
+
+export function VerificationBadge({ status }: { status: VerificationStatus }) {
+  const kind = status === 'APPROVED' ? 'ok' : status === 'REJECTED' || status === 'EXPIRED' ? 'bad' : status === 'PENDING_REVIEW' ? 'warn' : 'neutral'
+  return <Badge kind={kind}>{VERIFICATION_LABEL[status]}</Badge>
+}
+
+export function DocumentBadge({ status }: { status: DocumentStatus | 'EXPIRED' }) {
+  const kind = status === 'APPROVED' ? 'ok' : status === 'REJECTED' || status === 'EXPIRED' ? 'bad' : 'warn'
+  const label = status === 'SUBMITTED' ? 'Awaiting review' : status === 'APPROVED' ? 'Approved' : status === 'REJECTED' ? 'Rejected' : 'Expired'
+  return <Badge kind={kind}>{label}</Badge>
+}
+
+export function EligibleBadge({ eligible }: { eligible: boolean }) {
+  return <Badge kind={eligible ? 'ok' : 'neutral'}>{eligible ? 'Eligible for rides' : 'Not eligible'}</Badge>
+}

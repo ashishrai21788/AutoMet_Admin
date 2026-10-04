@@ -14,6 +14,12 @@ import RideSettings from '@/pages/RideSettings'
 import BusinessSettings from '@/pages/BusinessSettings'
 import Team from '@/pages/Team'
 import Account from '@/pages/Account'
+import Drivers from '@/pages/Drivers'
+import DriverNew from '@/pages/DriverNew'
+import DriverDetail from '@/pages/DriverDetail'
+import Vehicles from '@/pages/Vehicles'
+import VehicleDetail from '@/pages/VehicleDetail'
+import Verification from '@/pages/Verification'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })
 
@@ -38,6 +44,20 @@ export default function App() {
                     <Route path="categories" element={<Categories />} />
                     <Route path="pricing" element={<Pricing />} />
                     <Route path="ride-settings" element={<RideSettings />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="drivers.view" />}>
+                    <Route path="drivers" element={<Drivers />} />
+                    <Route path="drivers/:id" element={<DriverDetail />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="drivers.manage" />}>
+                    <Route path="drivers/new" element={<DriverNew />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="vehicles.view" />}>
+                    <Route path="vehicles" element={<Vehicles />} />
+                    <Route path="vehicles/:id" element={<VehicleDetail />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="documents.view" />}>
+                    <Route path="verification" element={<Verification />} />
                   </Route>
                   <Route element={<RequirePermission permission="settings.manage" />}>
                     <Route path="settings" element={<BusinessSettings />} />

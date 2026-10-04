@@ -54,8 +54,8 @@ src/pages      Businesses, Dashboard, Regions, Categories, Pricing, Ride Setting
 
 ## Status
 
-Built: Super Admin business list and creation (unique immutable App ID), guided onboarding (country and regions, vehicle categories, pricing with live fare preview and cancellation policy, confirm), dashboard with setup progress and warnings, business settings, team, forced password change.
+Built: Super Admin business list and creation (unique immutable App ID), guided onboarding (country and regions with service areas, vehicle categories, pricing with live fare preview and cancellation policy, confirm), dashboard with setup progress and warnings, business settings, team, forced password change, and driver and vehicle management: drivers (list with server-side search, filters and paging, add, details, status), vehicles, private documents with signed short-lived links, the verification queue with approve/reject and history, driver-vehicle assignment, and per-business document requirements.
 
-Not built: ride settings (dispatch), driver and rider management, trips, payments, audit log screen. Operational statistics are intentionally not shown until real data is tied to each business.
+Not built: ride settings (dispatch), riders, trips, payments, audit log screen, alerts for documents about to expire. Operational statistics are intentionally not shown until real data is tied to each business.
 
-The saved fare rules are not yet used by the rider app to price live rides.
+The saved fare rules are used for fare estimates only for businesses that have configured pricing; the rider and driver apps do not send their App ID yet.

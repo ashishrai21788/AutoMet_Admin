@@ -3,7 +3,7 @@
  * data: `countries-list` (countries and currencies) and `city-timezones` (cities, their province and time zone).
  * The city data covers larger cities only, so the screens also let the admin type a state or city that is not listed.
  */
-export interface Country { code: string; name: string; currencies: string[] }
+export interface Country { code: string; name: string; currencies: string[]; /** international dialling code, without the plus */ dialCode: string }
 
 export interface GeoData {
   countries: Country[]
@@ -15,7 +15,7 @@ let loading: Promise<GeoData> | null = null
 export function loadGeo(): Promise<GeoData> {
   loading ??= Promise.all([import('countries-list'), import('city-timezones/data/cityMap.json')]).then(([cl, ct]) => {
     const countries = Object.entries(cl.countries)
-      .map(([code, c]) => ({ code, name: c.name, currencies: c.currency as string[] }))
+      .map(([code, c]) => ({ code, name: c.name, currencies: c.currency as string[], dialCode: String((c.phone as number[])[0] ?? '') }))
       .sort((a, b) => a.name.localeCompare(b.name))
     return { countries, cities: ct.default as unknown as GeoData['cities'] }
   })

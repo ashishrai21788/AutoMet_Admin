@@ -3,8 +3,8 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  Building2, Calculator, Car, CircleUserRound, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
-  ShieldCheck, SlidersHorizontal, Settings, X,
+  BadgeCheck, Building2, Calculator, Car, CarFront, CircleUserRound, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
+  ShieldCheck, Settings, Users, X,
 } from 'lucide-react'
 import { api } from '@/api'
 import { useAuth } from '@/store/auth'
@@ -20,7 +20,9 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/regions', label: 'Regions', icon: MapPin, permission: 'dashboard.view' },
   { to: '/categories', label: 'Vehicle Categories', icon: Car, permission: 'dashboard.view' },
   { to: '/pricing', label: 'Pricing & Fare Rules', icon: Calculator, permission: 'dashboard.view' },
-  { to: '/ride-settings', label: 'Ride Settings', icon: SlidersHorizontal, permission: 'dashboard.view' },
+  { to: '/drivers', label: 'Drivers', icon: Users, permission: 'drivers.view' },
+  { to: '/vehicles', label: 'Vehicles', icon: CarFront, permission: 'vehicles.view' },
+  { to: '/verification', label: 'Driver Verification', icon: BadgeCheck, permission: 'documents.view' },
   { to: '/settings', label: 'Business Settings', icon: Settings, permission: 'settings.manage' },
   { to: '/account', label: 'Admin Profile', icon: CircleUserRound, permission: 'dashboard.view' },
 ]

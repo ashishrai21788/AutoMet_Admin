@@ -2,6 +2,9 @@ import type {
   AdminUser, Business, CancellationPolicy, Category, CategoryInput, CreatedBusiness, CreatedUser, FarePreview,
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
+import type {
+  DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, VehicleListItem, VerificationStatus,
+} from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/$/, '')
@@ -116,5 +119,93 @@ export const api = {
       request<CancellationPolicy>('/api/admin/business/cancellation-policies', { method: 'PUT', body: json(input), business: true }),
     deletePolicy: (id: string) =>
       request<{ id: string }>(`/api/admin/business/cancellation-policies/${id}`, { method: 'DELETE', business: true }),
+  },
+}
+
+// ---- drivers, vehicles, documents and verification ----
+
+
+const qs = (params: Record<string, string | number | undefined>) => {
+  const p = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') p.set(k, String(v))
+  const s = p.toString()
+  return s ? `?${s}` : ''
+}
+const biz = (path: string, init: RequestInit = {}) => request<never>(`/api/admin/business${path}`, { ...init, business: true }) as Promise<unknown>
+const get = <T>(path: string) => biz(path) as Promise<T>
+const send = <T>(method: string, path: string, body?: unknown) => biz(path, { method, body: body === undefined ? undefined : json(body) }) as Promise<T>
+
+export type DocumentKind = 'drivers' | 'vehicles'
+
+/**
+ * Uploads one document (multipart) and reports progress. fetch cannot report upload progress, so this uses XMLHttpRequest;
+ * it sends the same sign-in token and business header as every other request.
+ */
+export function uploadDocument(
+  kind: DocumentKind,
+  id: string,
+  fields: { type: string; number?: string; expiryDate?: string },
+  file: File,
+  onProgress?: (fraction: number) => void,
+): Promise<{ document: unknown; verificationStatus: VerificationStatus }> {
+  if (!API_CONFIGURED) return Promise.reject(new ApiError(NOT_CONFIGURED_MESSAGE, 0))
+  const token = useAuth.getState().session?.token
+  const appId = currentAppId()
+  const form = new FormData()
+  form.append('type', fields.type)
+  if (fields.number) form.append('number', fields.number)
+  if (fields.expiryDate) form.append('expiryDate', fields.expiryDate)
+  form.append('file', file)
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${BASE}/api/admin/business/${kind}/${id}/documents`)
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    if (appId) xhr.setRequestHeader('X-App-Id', appId)
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(e.loaded / e.total) }
+    xhr.onerror = () => reject(new ApiError('Cannot reach the server. Check your connection and try again.', 0))
+    xhr.onload = () => {
+      let body: { data?: never; message?: string; errors?: Record<string, string> } = {}
+      try { body = JSON.parse(xhr.responseText) } catch { /* not JSON */ }
+      if (xhr.status === 401 && token) useAuth.getState().logout()
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body.data as never)
+      else reject(new ApiError(body.message ?? `Upload failed (${xhr.status})`, xhr.status, body.errors ?? {}))
+    }
+    xhr.send(form)
+  })
+}
+
+export const fleet = {
+  requirements: {
+    get: () => get<{ driver: RequirementDef[]; vehicle: RequirementDef[] }>('/requirements'),
+    update: (input: { driver?: Record<string, boolean>; vehicle?: Record<string, boolean> }) =>
+      send<{ driver: RequirementDef[]; vehicle: RequirementDef[] }>('PUT', '/requirements', input),
+  },
+  drivers: {
+    list: (params: Record<string, string | number | undefined>) => get<Paged<DriverListItem>>(`/drivers${qs(params)}`),
+    get: (id: string) => get<DriverDetail>(`/drivers/${id}`),
+    create: (input: DriverInput) => send<{ id: string }>('POST', '/drivers', input),
+    update: (id: string, input: Partial<DriverInput>) => send<{ id: string }>('PATCH', `/drivers/${id}`, input),
+    setStatus: (id: string, status: string, reason: string) => send<{ id: string }>('POST', `/drivers/${id}/status`, { status, reason }),
+    history: (id: string) => get<HistoryEntry[]>(`/drivers/${id}/history`),
+    documents: (id: string) => get<DocumentsPayload>(`/drivers/${id}/documents`),
+    assignVehicle: (id: string, vehicleId: string, reassign: boolean) => send<{ assignmentId: string }>('POST', `/drivers/${id}/assign-vehicle`, { vehicleId, reassign }),
+    unassignVehicle: (id: string, reason: string) => send<{ ok: boolean }>('POST', `/drivers/${id}/unassign-vehicle`, { reason }),
+  },
+  vehicles: {
+    list: (params: Record<string, string | number | undefined>) => get<Paged<VehicleListItem>>(`/vehicles${qs(params)}`),
+    get: (id: string) => get<VehicleDetail>(`/vehicles/${id}`),
+    create: (input: VehicleInput) => send<{ id: string }>('POST', '/vehicles', input),
+    update: (id: string, input: Partial<VehicleInput>) => send<{ id: string }>('PATCH', `/vehicles/${id}`, input),
+    setStatus: (id: string, status: string, reason: string) => send<{ id: string }>('POST', `/vehicles/${id}/status`, { status, reason }),
+    history: (id: string) => get<HistoryEntry[]>(`/vehicles/${id}/history`),
+    documents: (id: string) => get<DocumentsPayload>(`/vehicles/${id}/documents`),
+    assignDriver: (id: string, driverId: string, reassign: boolean) => send<{ assignmentId: string }>('POST', `/vehicles/${id}/assign-driver`, { driverId, reassign }),
+    unassignDriver: (id: string, reason: string) => send<{ ok: boolean }>('POST', `/vehicles/${id}/unassign-driver`, { reason }),
+  },
+  documents: {
+    link: (kind: DocumentKind, docId: string) =>
+      get<{ url: string; expiresInSeconds: number; mime: string; fileName: string }>(`/${kind === 'drivers' ? 'driver' : 'vehicle'}-documents/${docId}/url`),
+    review: (kind: DocumentKind, docId: string, decision: 'APPROVE' | 'REJECT', reason: string) =>
+      send<{ documentStatus: string; verificationStatus: VerificationStatus }>('POST', `/${kind === 'drivers' ? 'driver' : 'vehicle'}-documents/${docId}/review`, { decision, reason }),
   },
 }

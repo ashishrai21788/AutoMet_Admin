@@ -22,19 +22,45 @@ export function SearchInput({ value, onChange, placeholder = 'Search' }: { value
   )
 }
 
-/** Table on wide screens, stacked cards on phones. Pages of `pageSize` rows. */
+/** Paging controlled by the server: the rows are already the current page. */
+export interface ServerPaging {
+  page: number
+  pageSize: number
+  total: number
+  onPage: (page: number) => void
+}
+
+/**
+ * Table on wide screens, stacked cards on phones. By default it pages the rows it is given in the browser; with `paging`
+ * the rows are one page from the server and the controls ask the parent for another.
+ */
 export default function DataTable<T>({
-  rows, columns, rowKey, pageSize = 8, empty,
-}: { rows: T[]; columns: Column<T>[]; rowKey: (row: T) => string; pageSize?: number; empty: { title: string; text?: string; action?: ReactNode } }) {
-  const [page, setPage] = useState(0)
-  const pages = Math.max(1, Math.ceil(rows.length / pageSize))
-  useEffect(() => { if (page > pages - 1) setPage(pages - 1) }, [page, pages])
-  const slice = rows.slice(page * pageSize, page * pageSize + pageSize)
+  rows, columns, rowKey, pageSize = 8, empty, paging, loading, onRowClick,
+}: {
+  rows: T[]
+  columns: Column<T>[]
+  rowKey: (row: T) => string
+  pageSize?: number
+  empty: { title: string; text?: string; action?: ReactNode }
+  paging?: ServerPaging
+  /** dims the table while the next page loads */
+  loading?: boolean
+  onRowClick?: (row: T) => void
+}) {
+  const [localPage, setLocalPage] = useState(0)
+  const size = paging ? paging.pageSize : pageSize
+  const total = paging ? paging.total : rows.length
+  const pages = Math.max(1, Math.ceil(total / size))
+  const page = paging ? paging.page - 1 : localPage
+  useEffect(() => { if (!paging && localPage > pages - 1) setLocalPage(pages - 1) }, [paging, localPage, pages])
+  const slice = paging ? rows : rows.slice(localPage * size, localPage * size + size)
+  const go = (p: number) => (paging ? paging.onPage(p + 1) : setLocalPage(p))
 
-  if (rows.length === 0) return <EmptyState {...empty} />
+  if (total === 0 && rows.length === 0) return <EmptyState {...empty} />
 
+  const clickable = onRowClick ? 'cursor-pointer hover:bg-black/[.03] dark:hover:bg-white/5' : ''
   return (
-    <div>
+    <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'} aria-busy={loading}>
       <div className="hidden overflow-x-auto sm:block">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-line text-xs text-muted">
@@ -42,7 +68,7 @@ export default function DataTable<T>({
           </thead>
           <tbody>
             {slice.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-line last:border-0">
+              <tr key={rowKey(row)} onClick={onRowClick ? () => onRowClick(row) : undefined} className={`border-b border-line last:border-0 ${clickable}`}>
                 {columns.map((c) => <td key={c.header} className={`px-4 py-3 align-middle ${c.className ?? ''}`}>{c.cell(row)}</td>)}
               </tr>
             ))}
@@ -65,10 +91,10 @@ export default function DataTable<T>({
 
       {pages > 1 && (
         <nav aria-label="Pagination" className="flex items-center justify-between border-t border-line px-4 py-3 text-sm">
-          <span className="text-muted">{page * pageSize + 1}–{Math.min(rows.length, (page + 1) * pageSize)} of {rows.length}</span>
+          <span className="text-muted">{page * size + 1}–{Math.min(total, (page + 1) * size)} of {total}</span>
           <div className="flex gap-2">
-            <Button variant="ghost" aria-label="Previous page" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft size={16} /></Button>
-            <Button variant="ghost" aria-label="Next page" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}><ChevronRight size={16} /></Button>
+            <Button variant="ghost" aria-label="Previous page" disabled={page === 0} onClick={() => go(page - 1)}><ChevronLeft size={16} /></Button>
+            <Button variant="ghost" aria-label="Next page" disabled={page >= pages - 1} onClick={() => go(page + 1)}><ChevronRight size={16} /></Button>
           </div>
         </nav>
       )}

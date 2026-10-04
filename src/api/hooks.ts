@@ -1,13 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, ApiError } from '@/api'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { api, ApiError, fleet } from '@/api'
 import { useScope } from '@/lib/useScope'
 import { loadGeo } from '@/lib/geo'
 import { useToast } from '@/components/feedback'
 
 /** Every business query is keyed by appId, so switching business never shows another business's cached data. */
-export function useBusinessQuery<T>(name: string, fn: () => Promise<T>) {
+export function useBusinessQuery<T>(name: string, fn: () => Promise<T>, enabled = true) {
   const { tenantId } = useScope()
-  return useQuery({ queryKey: ['biz', tenantId, name], queryFn: fn, enabled: !!tenantId })
+  return useQuery({ queryKey: ['biz', tenantId, name], queryFn: fn, enabled: !!tenantId && enabled })
 }
 
 export const useOverview = () => useBusinessQuery('overview', api.business.overview)
@@ -47,3 +47,24 @@ export function useBusinessMutation<TInput, TResult>(
 
 /** Country and city options; loaded once, on demand. */
 export const useGeo = () => useQuery({ queryKey: ['geo'], queryFn: loadGeo, staleTime: Infinity, gcTime: Infinity })
+
+// ---- drivers and vehicles ----
+
+type Params = Record<string, string | number | undefined>
+
+/** A page of drivers from the server. The previous page stays visible while the next one loads. */
+export function useDrivers(params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'drivers', params], queryFn: () => fleet.drivers.list(params), enabled: !!tenantId, placeholderData: keepPreviousData })
+}
+
+export function useVehicles(params: Params, enabled = true) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'vehicles', params], queryFn: () => fleet.vehicles.list(params), enabled: !!tenantId && enabled, placeholderData: keepPreviousData })
+}
+
+export const useDriver = (id: string) => useBusinessQuery(`driver:${id}`, () => fleet.drivers.get(id), !!id)
+export const useDriverHistory = (id: string) => useBusinessQuery(`driver-history:${id}`, () => fleet.drivers.history(id), !!id)
+export const useVehicle = (id: string) => useBusinessQuery(`vehicle:${id}`, () => fleet.vehicles.get(id), !!id)
+export const useVehicleHistory = (id: string) => useBusinessQuery(`vehicle-history:${id}`, () => fleet.vehicles.history(id), !!id)
+export const useRequirements = () => useBusinessQuery('requirements', fleet.requirements.get)

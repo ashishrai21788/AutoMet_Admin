@@ -208,3 +208,174 @@ export interface Overview {
     pricedCategories: number
   }
 }
+
+// ---- drivers, vehicles, documents and verification ----
+
+export type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
+export type VerificationStatus = 'INCOMPLETE' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
+export type DocumentStatus = 'SUBMITTED' | 'APPROVED' | 'REJECTED'
+
+export interface Paged<T> {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export interface VehicleBrief {
+  id: string
+  registrationNumber: string
+  make: string
+  model: string
+  categoryId: string
+  status: AccountStatus
+}
+
+export interface DriverListItem {
+  id: string
+  name: string
+  phone: string
+  photoUrl: string | null
+  vehicle: VehicleBrief | null
+  operatingRegionId: string | null
+  eligibleCategoryId: string | null
+  verificationStatus: VerificationStatus
+  accountStatus: AccountStatus
+  eligible: boolean
+  registeredAt: string
+}
+
+export interface Eligibility {
+  eligible: boolean
+  reasons: { code: string; message: string }[]
+}
+
+export interface DriverDetail {
+  id: string
+  name: string
+  fullName: string
+  phone: string
+  email: string | null
+  dateOfBirth: string | null
+  address: { country?: string; state?: string; city?: string; line?: string } | null
+  photoUrl: string | null
+  operatingRegionId: string | null
+  eligibleCategoryId: string | null
+  eligibleCategoryName: string | null
+  accountStatus: AccountStatus
+  verificationStatus: VerificationStatus
+  verification: { missing: string[]; rejected: string[]; expired: string[]; pending: string[] }
+  eligibility: Eligibility
+  vehicle: VehicleBrief | null
+  assignedAt: string | null
+  activity: { registeredAt: string; createdByAdmin: boolean; phoneVerified: boolean; lastActiveAt: string | null; signedInOnApp: boolean }
+  appReportedVehicle: { registrationNumber: string; model: string | null; type: string | null; colour: string | null } | null
+  canViewDocuments: boolean
+  createdAt: string
+}
+
+export interface DriverInput {
+  fullName: string
+  phone: string
+  email: string
+  dateOfBirth: string
+  address: { country: string; state: string; city: string; line: string }
+  operatingRegionId: string
+  eligibleCategoryId: string
+}
+
+export interface VehicleListItem {
+  id: string
+  registrationNumber: string
+  make: string
+  model: string
+  year: number | null
+  colour: string
+  categoryId: string
+  categoryName: string | null
+  driver: { id: string; name: string; phone: string; accountStatus: AccountStatus } | null
+  operatingRegionId: string | null
+  regionName: string | null
+  status: AccountStatus
+  verificationStatus: VerificationStatus
+  createdAt: string
+}
+
+export interface VehicleDetail extends VehicleListItem {
+  verification: { missing: string[]; rejected: string[]; expired: string[]; pending: string[] }
+  passengerCapacity: number
+  luggageCapacity: number | null
+  assignedAt: string | null
+  operational: boolean
+  canViewDocuments: boolean
+}
+
+export interface VehicleInput {
+  registrationNumber: string
+  make: string
+  model: string
+  year: string
+  colour: string
+  categoryId: string
+  passengerCapacity: string
+  luggageCapacity: string
+  operatingRegionId: string
+  status: AccountStatus
+}
+
+export interface DocumentInfo {
+  id: string
+  type: string
+  number: string
+  expiryDate: string | null
+  status: DocumentStatus
+  effectiveStatus: DocumentStatus | 'EXPIRED'
+  rejectionReason: string
+  submittedAt: string
+  reviewedAt: string | null
+  reviewedBy: string | null
+  version: number
+  mime: string | null
+  fileName: string | null
+  viewable: boolean
+}
+
+export interface DocumentRequirement {
+  type: string
+  label: string
+  mandatory: boolean
+  needsNumber: boolean
+  needsExpiry: boolean
+  photo: boolean
+  document: DocumentInfo | null
+}
+
+export interface DocumentsPayload {
+  verificationStatus: VerificationStatus
+  verification: { missing: string[]; rejected: string[]; expired: string[]; pending: string[] }
+  canView: boolean
+  canReview: boolean
+  requirements: DocumentRequirement[]
+}
+
+export interface HistoryEntry {
+  id: string
+  kind: string
+  action: string
+  from: string | null
+  to: string | null
+  detail: string
+  reason: string
+  actor: string | null
+  at: string
+}
+
+export interface RequirementDef {
+  type: string
+  label: string
+  mandatory: boolean
+  needsNumber: boolean
+  needsExpiry: boolean
+  locked?: boolean
+  photo?: boolean
+}

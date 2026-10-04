@@ -1,10 +1,15 @@
 import type { AdminUser, Role } from './types'
 
+/** Mirrors AutoMet_Webend_Apis/lib/adminPermissions.js. The server enforces these; the screens only hide what a role cannot do. */
 export type Permission =
   | 'dashboard.view'
   | 'clients.manage'
   | 'drivers.view'
   | 'drivers.manage'
+  | 'vehicles.view'
+  | 'vehicles.manage'
+  | 'documents.view'
+  | 'verification.review'
   | 'riders.view'
   | 'trips.view'
   | 'pricing.manage'
@@ -14,15 +19,19 @@ export type Permission =
   | 'audit.view'
 
 const ALL: Permission[] = [
-  'dashboard.view', 'clients.manage', 'drivers.view', 'drivers.manage', 'riders.view',
-  'trips.view', 'pricing.manage', 'payments.view', 'settings.manage', 'team.manage', 'audit.view',
+  'dashboard.view', 'clients.manage', 'drivers.view', 'drivers.manage', 'vehicles.view', 'vehicles.manage',
+  'documents.view', 'verification.review', 'riders.view', 'trips.view', 'pricing.manage', 'payments.view',
+  'settings.manage', 'team.manage', 'audit.view',
 ]
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   super_admin: ALL,
   client_admin: ALL.filter((p) => p !== 'clients.manage'),
-  operations: ['dashboard.view', 'drivers.view', 'drivers.manage', 'riders.view', 'trips.view'],
-  support: ['dashboard.view', 'drivers.view', 'riders.view', 'trips.view'],
+  operations: [
+    'dashboard.view', 'drivers.view', 'drivers.manage', 'vehicles.view', 'vehicles.manage', 'documents.view',
+    'verification.review', 'riders.view', 'trips.view',
+  ],
+  support: ['dashboard.view', 'drivers.view', 'vehicles.view', 'riders.view', 'trips.view'],
   finance: ['dashboard.view', 'trips.view', 'payments.view'],
 }
 
