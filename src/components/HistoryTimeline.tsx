@@ -15,6 +15,7 @@ const TITLES: Record<string, string> = {
   VEHICLE_UNASSIGNED: 'Vehicle unassigned',
   DRIVER_ASSIGNED: 'Driver assigned',
   DRIVER_UNASSIGNED: 'Driver unassigned',
+  WENT_OFFLINE_NO_SIGNAL: 'Taken offline: no location signal',
 }
 
 const pretty = (s: string | null) => (s ? s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, ' ') : '')

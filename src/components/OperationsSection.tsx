@@ -65,7 +65,7 @@ export default function OperationsSection() {
         <Stat label="Searching for a driver" value={s.trips.searching} to={canTrips ? '/trips?group=searching' : undefined} />
         <Stat label="Completed today" value={s.trips.completedToday} hint={`${s.trips.requestedToday} requested · ${s.trips.cancelledToday} cancelled`} to={canTrips ? '/trips?group=completed' : undefined} />
         <Stat label="Fares completed today" value={fmtMoney(s.revenue.today, s.revenue.currency)} hint="estimates until final fares are recorded" />
-        <Stat label="Drivers online" value={s.drivers.online} hint={`${s.drivers.onlineEligible} eligible · ${s.drivers.onlineNotEligible} not eligible`} to={canDrivers ? '/ride-settings' : undefined} />
+        <Stat label="Drivers online" value={s.drivers.online} hint={`${s.drivers.onlineLive} live · ${s.drivers.onlineStale} location out of date${s.drivers.onlineNoSignal ? ` · ${s.drivers.onlineNoSignal} sharing no location` : ''}`} to={canDrivers ? '/live-map' : undefined} />
         <Stat label="Eligible drivers" value={s.drivers.eligible} hint={`of ${s.drivers.total} drivers`} to={canDrivers ? '/drivers' : undefined} />
         <Stat label="Riders" value={s.riders.total} hint={`${s.riders.newThisWeek} joined this week`} to={canRiders ? '/riders' : undefined} />
         <Stat label="Acceptance · cancellation" value={`${s.trips.acceptanceRate}% · ${s.trips.cancellationRate}%`} hint="last 7 days" />

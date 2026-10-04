@@ -44,3 +44,10 @@ export function TripStatusBadge({ status }: { status: string }) {
     : status === 'REQUESTED' ? 'warn' : 'neutral'
   return <Badge kind={kind}>{tripStatusLabel(status)}</Badge>
 }
+
+export function PresenceBadge({ presence, ageSeconds }: { presence: 'LIVE' | 'STALE' | 'NO_SIGNAL' | 'OFFLINE'; ageSeconds?: number | null }) {
+  if (presence === 'LIVE') return <Badge kind="ok">Online · live</Badge>
+  if (presence === 'STALE') return <Badge kind="warn">{ageSeconds ? `Location ${Math.max(1, Math.round(ageSeconds / 60))} min old` : 'Location out of date'}</Badge>
+  if (presence === 'NO_SIGNAL') return <Badge kind="warn">Online · no location</Badge>
+  return <Badge>Offline</Badge>
+}

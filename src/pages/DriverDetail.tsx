@@ -6,13 +6,13 @@ import { ApiError, fleet } from '@/api'
 import { useCategories, useDriver, useDriverHistory, useRegions, useVehicles } from '@/api/hooks'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
-import { fmtDate, fmtDateTime, regionLabel } from '@/lib/labels'
+import { fmtDate, fmtDateTime, regionLabel, timeAgo } from '@/lib/labels'
 import type { DriverDetail as Driver } from '@/lib/types'
 import DocumentsPanel from '@/components/DocumentsPanel'
 import HistoryTimeline from '@/components/HistoryTimeline'
 import Modal from '@/components/Modal'
 import StatusModal from '@/components/StatusModal'
-import { AccountBadge, EligibleBadge, VerificationBadge } from '@/components/StatusBadge'
+import { AccountBadge, EligibleBadge, PresenceBadge, VerificationBadge } from '@/components/StatusBadge'
 import { useConfirm, useToast } from '@/components/feedback'
 import { Avatar } from '@/pages/Drivers'
 import { Alert, Button, Card, EmptyState, ErrorState, Field, PageHeader, SelectField, Spinner, TextField, Textarea } from '@/components/ui'
@@ -237,7 +237,7 @@ export default function DriverDetail() {
       {tab === 'overview' && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-5"><h2 className="mb-3 font-semibold">Summary</h2>
-            <Dl rows={[['Account status', <AccountBadge status={d.accountStatus} />], ['Verification', <VerificationBadge status={d.verificationStatus} />], ['Operating region', regionLabel(region)], ['Eligible category', d.eligibleCategoryName], ['Vehicle', d.vehicle ? <Link className="hover:underline" to={`/vehicles/${d.vehicle.id}`}>{d.vehicle.registrationNumber}</Link> : 'Not assigned'], ['Registered', fmtDate(d.createdAt)]]} />
+            <Dl rows={[['Account status', <AccountBadge status={d.accountStatus} />], ['Availability', <PresenceBadge presence={d.presence} ageSeconds={d.locationAgeSeconds} />], ['Current trip', d.currentTripId ? <Link className="hover:underline" to={`/trips/${d.currentTripId}`}>{d.currentTripId}</Link> : 'None'], ['Last seen', d.lastSeenAt ? `${timeAgo(d.lastSeenAt)} · ${fmtDateTime(d.lastSeenAt)}` : 'Never'], ['Verification', <VerificationBadge status={d.verificationStatus} />], ['Operating region', regionLabel(region)], ['Eligible category', d.eligibleCategoryName], ['Vehicle', d.vehicle ? <Link className="hover:underline" to={`/vehicles/${d.vehicle.id}`}>{d.vehicle.registrationNumber}</Link> : 'Not assigned'], ['Registered', fmtDate(d.createdAt)]]} />
           </Card>
           <Card className="p-5"><h2 className="mb-1 font-semibold">Ride eligibility</h2>
             <p className="mb-3 text-sm text-muted">Whether this driver could be offered rides. It is worked out from the account status, verification, region and vehicle; none of them alone is enough.</p>

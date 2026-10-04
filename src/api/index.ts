@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AlertsPayload, AuditPage, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AlertsPayload, AuditPage, LiveMapData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -182,6 +182,7 @@ export const platform = {
 export const ops = {
   audit: (params: Record<string, string | number | undefined>) => get<AuditPage>(`/audit${qs(params)}`),
   alerts: () => get<AlertsPayload>('/alerts'),
+  liveMap: () => get<LiveMapData>('/live-map'),
   stats: () => get<OpsStats>('/stats'),
   riders: {
     list: (params: Record<string, string | number | undefined>) => get<Paged<RiderItem>>(`/riders${qs(params)}`),

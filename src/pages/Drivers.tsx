@@ -6,11 +6,11 @@ import { fleet } from '@/api'
 import { useCategories, useDrivers, useRegions } from '@/api/hooks'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
-import { fmtDate, initials, regionLabel, useDebounced } from '@/lib/labels'
+import { fmtDate, initials, regionLabel, timeAgo, useDebounced } from '@/lib/labels'
 import type { DriverListItem } from '@/lib/types'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
 import StatusModal from '@/components/StatusModal'
-import { AccountBadge, VerificationBadge } from '@/components/StatusBadge'
+import { AccountBadge, PresenceBadge, VerificationBadge } from '@/components/StatusBadge'
 import { Button, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
 
 const PAGE_SIZE = 15
@@ -56,6 +56,12 @@ export default function Drivers() {
     { header: 'Driver ID', cell: (d) => <span className="font-mono text-xs">{d.id}</span> },
     { header: 'Vehicle', cell: (d) => d.vehicle ? <Link to={`/vehicles/${d.vehicle.id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>{d.vehicle.registrationNumber}<span className="block text-xs text-muted">{d.vehicle.make} {d.vehicle.model}</span></Link> : <span className="text-muted">Not assigned</span> },
     { header: 'Region', cell: (d) => regionLabel(regionById.get(d.operatingRegionId ?? '')) },
+    { header: 'Availability', cell: (d) => (
+      <div className="space-y-0.5">
+        <PresenceBadge presence={d.presence} ageSeconds={d.locationAgeSeconds} />
+        <div className="text-xs text-muted" title={d.lastSeenAt ?? undefined}>{d.currentTripId ? <Link to={`/trips/${d.currentTripId}`} className="underline" onClick={(e) => e.stopPropagation()}>On a trip</Link> : d.lastSeenAt ? `Seen ${timeAgo(d.lastSeenAt)}` : 'Never seen'}</div>
+      </div>
+    ) },
     { header: 'Verification', cell: (d) => <VerificationBadge status={d.verificationStatus} /> },
     { header: 'Account', cell: (d) => <AccountBadge status={d.accountStatus} /> },
     { header: 'Registered', cell: (d) => fmtDate(d.registeredAt) },

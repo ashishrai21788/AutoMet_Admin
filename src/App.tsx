@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { FeedbackProvider } from '@/components/feedback'
@@ -22,6 +23,10 @@ import Vehicles from '@/pages/Vehicles'
 import VehicleDetail from '@/pages/VehicleDetail'
 import Verification from '@/pages/Verification'
 import Alerts from '@/pages/Alerts'
+import { Spinner } from '@/components/ui'
+
+// the map library is large, so the page loads only when it is opened
+const LiveMap = lazy(() => import('@/pages/LiveMap'))
 import AuditLog from '@/pages/AuditLog'
 import Trips from '@/pages/Trips'
 import TripDetail from '@/pages/TripDetail'
@@ -55,6 +60,7 @@ export default function App() {
                   </Route>
                   <Route element={<RequirePermission permission="dashboard.view" />}>
                     <Route path="alerts" element={<Alerts />} />
+                    <Route path="live-map" element={<Suspense fallback={<Spinner />}><LiveMap /></Suspense>} />
                   </Route>
                   <Route element={<RequirePermission permission="trips.view" />}>
                     <Route path="trips" element={<Trips />} />

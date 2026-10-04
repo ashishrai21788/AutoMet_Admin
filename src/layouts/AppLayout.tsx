@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
   BadgeCheck, Bell, Building2, Calculator, Car, CarFront, CircleUserRound, Gauge, History, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
-  Route, ShieldCheck, Settings, SlidersHorizontal, UserRound, Users, X,
+  Map as MapIcon, Route, ShieldCheck, Settings, SlidersHorizontal, UserRound, Users, X,
 } from 'lucide-react'
 import { api } from '@/api'
 import { useAlerts } from '@/api/hooks'
@@ -21,6 +21,7 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/regions', label: 'Regions', icon: MapPin, permission: 'dashboard.view' },
   { to: '/categories', label: 'Vehicle Categories', icon: Car, permission: 'dashboard.view' },
   { to: '/pricing', label: 'Pricing & Fare Rules', icon: Calculator, permission: 'dashboard.view' },
+  { to: '/live-map', label: 'Live Map', icon: MapIcon, permission: 'dashboard.view' },
   { to: '/trips', label: 'Trips', icon: Route, permission: 'trips.view' },
   { to: '/drivers', label: 'Drivers', icon: Users, permission: 'drivers.view' },
   { to: '/riders', label: 'Riders', icon: UserRound, permission: 'riders.view' },

@@ -233,7 +233,7 @@ export interface VehicleBrief {
   status: AccountStatus
 }
 
-export interface DriverListItem {
+export interface DriverListItem extends PresenceFields {
   id: string
   name: string
   phone: string
@@ -252,7 +252,7 @@ export interface Eligibility {
   reasons: { code: string; message: string }[]
 }
 
-export interface DriverDetail {
+export interface DriverDetail extends PresenceFields {
   id: string
   name: string
   fullName: string
@@ -446,7 +446,7 @@ export interface AlertsPayload {
 }
 
 export interface OpsStats {
-  drivers: { total: number; activeAccounts: number; eligible: number; online: number; onlineEligible: number; onlineNotEligible: number; partial: boolean }
+  drivers: { total: number; activeAccounts: number; eligible: number; online: number; onlineEligible: number; onlineNotEligible: number; onlineLive: number; onlineStale: number; onlineNoSignal: number; partial: boolean }
   trips: {
     active: number; searching: number; requestedToday: number; completedToday: number; cancelledToday: number
     acceptanceRate: number; cancellationRate: number; partial: boolean
@@ -542,4 +542,65 @@ export interface PlatformOverview {
   }
   partial: boolean
   generatedAt: string
+}
+
+// ---- driver presence and the live map ----
+
+export type Presence = 'LIVE' | 'STALE' | 'NO_SIGNAL' | 'OFFLINE'
+
+export interface PresenceFields {
+  online: boolean
+  presence: Presence
+  locationAgeSeconds: number | null
+  lastLocationAt: string | null
+  lastSeenAt: string | null
+  position: { lat: number; lng: number } | null
+  wentOfflineReason: string | null
+  currentTripId: string | null
+}
+
+export interface LiveDriver {
+  id: string
+  name: string
+  phone: string | null
+  lat: number
+  lng: number
+  heading: number | null
+  speedKph: number | null
+  presence: 'LIVE' | 'STALE'
+  ageSeconds: number | null
+  updatedAt: string
+  eligible: boolean
+  eligibilityReasons: string[]
+  accountStatus: AccountStatus
+  categoryId: string | null
+  regionId: string | null
+  regionName: string | null
+  vehicle: { plate: string; label: string } | null
+  currentTripId: string | null
+}
+
+export interface LiveTrip {
+  id: string
+  status: string
+  statusGroup: TripStatusGroup
+  requestedAt: string
+  driverId: string
+  riderId: string
+  pickup: { address: string; lat: number; lng: number } | null
+  drop: { address: string; lat: number; lng: number } | null
+  fare: number | null
+  currency: string | null
+}
+
+export interface LiveMapData {
+  generatedAt: string
+  freshSeconds: number
+  staleOfflineSeconds: number
+  refreshSeconds: number
+  drivers: LiveDriver[]
+  trips: LiveTrip[]
+  regions: { id: string; name: string; center: { lat: number; lng: number }; radiusKm: number }[]
+  counts: { live: number; stale: number; noSignal: number; eligibleLive: number; online: number; activeTrips: number; searching: number }
+  partial: boolean
 }

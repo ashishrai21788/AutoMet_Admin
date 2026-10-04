@@ -80,6 +80,11 @@ export const useAlerts = (enabled = true) => {
   const { tenantId } = useScope()
   return useQuery({ queryKey: ['biz', tenantId, 'alerts'], queryFn: ops.alerts, enabled: !!tenantId && enabled, refetchInterval: 60000 })
 }
+/** The live map, re-read at the interval the server asks for (the drivers' heartbeat rate) while the page is visible. */
+export const useLiveMap = () => {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'live-map'], queryFn: ops.liveMap, enabled: !!tenantId, refetchInterval: (q) => (q.state.data?.refreshSeconds ?? 10) * 1000, placeholderData: keepPreviousData })
+}
 export const useOpsStats = (enabled = true) => {
   const { tenantId } = useScope()
   return useQuery({ queryKey: ['biz', tenantId, 'stats'], queryFn: ops.stats, enabled: !!tenantId && enabled, refetchInterval: 30000 })
