@@ -137,6 +137,7 @@ export const api = {
     update: (appId: string, input: { name?: string; appName?: string; city?: string; plan?: Business['plan'] }) =>
       request<Business>(`/api/admin/tenants/${appId}`, { method: 'PATCH', body: json(input) }),
     create: (input: NewBusinessInput) => request<CreatedBusiness>('/api/admin/tenants', { method: 'POST', body: json(input) }),
+    remove: (appId: string) => request<{ deleted: string }>(`/api/admin/tenants/${appId}`, { method: 'DELETE', body: json({ confirm: appId }) }),
     setStatus: (appId: string, status: Business['status']) =>
       request<Business>(`/api/admin/tenants/${appId}/status`, { method: 'PATCH', body: json({ status }) }),
   },

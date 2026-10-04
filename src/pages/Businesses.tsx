@@ -5,6 +5,7 @@ import { Copy } from 'lucide-react'
 import { api, ApiError } from '@/api'
 import type { Business, CreatedBusiness, NewBusinessInput } from '@/lib/types'
 import EditBusinessModal from '@/components/EditBusinessModal'
+import DeleteBusinessModal from '@/components/DeleteBusinessModal'
 import SecretNotice from '@/components/SecretNotice'
 import Modal from '@/components/Modal'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
@@ -71,6 +72,7 @@ export default function Businesses() {
   }
 
   const [editing, setEditing] = useState<Business | null>(null)
+  const [deleting, setDeleting] = useState<Business | null>(null)
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -91,6 +93,7 @@ export default function Businesses() {
         <Link to={`/businesses/${b.appId}`}><Button variant="ghost">Manage</Button></Link>
         <Button variant="ghost" onClick={() => setEditing(b)}>Edit</Button>
         <Button variant={b.status === 'suspended' ? 'ghost' : 'danger'} loading={changeStatus.isPending && changeStatus.variables?.id === b.appId} onClick={() => toggle(b)}>{b.status === 'suspended' ? 'Activate' : 'Suspend'}</Button>
+        {!b.isDefault && <Button variant="ghost" onClick={() => setDeleting(b)}>Delete</Button>}
       </div>
     ) },
   ]
@@ -113,6 +116,7 @@ export default function Businesses() {
       )}
 
       {editing && <EditBusinessModal business={editing} onClose={() => setEditing(null)} />}
+      {deleting && <DeleteBusinessModal business={deleting} onClose={() => setDeleting(null)} />}
 
       <Card>
         <div className="flex flex-wrap gap-3 border-b border-line p-4">

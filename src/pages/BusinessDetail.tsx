@@ -5,6 +5,7 @@ import { ArrowLeft, Copy } from 'lucide-react'
 import { api, platform } from '@/api'
 import { fmtDate, fmtMoney } from '@/lib/labels'
 import EditBusinessModal from '@/components/EditBusinessModal'
+import DeleteBusinessModal from '@/components/DeleteBusinessModal'
 import { TeamManager } from '@/pages/Team'
 import { CYCLE_LABEL, refreshPlatform } from '@/lib/billing'
 import { AssignPlanModal, InvoiceTable, IssueInvoiceModal, SubscriptionBadge } from '@/components/billing'
@@ -102,6 +103,7 @@ export default function BusinessDetail() {
   const toast = useToast()
   const confirm = useConfirm()
   const [editing, setEditing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const list = useQuery({ queryKey: ['businesses'], queryFn: api.businesses.list })
   const overview = useQuery({ queryKey: ['platform-overview'], queryFn: platform.overview })
@@ -139,10 +141,12 @@ export default function BusinessDetail() {
             <Badge kind={statusKind[b.status]}>{b.status}</Badge>
             <Button variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
             <Button variant={b.status === 'suspended' ? 'ghost' : 'danger'} loading={changeStatus.isPending} onClick={toggle}>{b.status === 'suspended' ? 'Activate' : 'Suspend'}</Button>
+            {!b.isDefault && <Button variant="danger" onClick={() => setDeleting(true)}>Delete</Button>}
           </div>
         }
       />
       {editing && <EditBusinessModal business={b} onClose={() => setEditing(false)} />}
+      {deleting && <DeleteBusinessModal business={b} onClose={() => setDeleting(false)} />}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="p-5">

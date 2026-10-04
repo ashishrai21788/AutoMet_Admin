@@ -24,6 +24,7 @@ export interface Business {
   supportPhone: string
   market: Market | null
   createdAt: string
+  isDefault?: boolean
   /** Only on the platform list. */
   setup?: { percent: number; complete: boolean; nextStep: string | null }
 }
