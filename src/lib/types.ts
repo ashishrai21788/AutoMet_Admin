@@ -379,3 +379,23 @@ export interface RequirementDef {
   locked?: boolean
   photo?: boolean
 }
+
+// ---- ride settings and driver availability ----
+
+export interface RideSettings {
+  requireEligibleDrivers: boolean
+}
+
+export interface Availability {
+  totalDrivers: number
+  activeAccounts: number
+  eligible: number
+  notEligible: number
+  online: number
+  onlineEligible: number
+  onlineNotEligible: number
+  /** for active drivers: why each would be blocked once eligibility is required (reason code -> drivers) */
+  blockedBy: Record<string, number>
+  truncated: boolean
+  settings: RideSettings
+}

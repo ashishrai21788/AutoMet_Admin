@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, VehicleListItem, VerificationStatus,
+  Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -175,6 +175,11 @@ export function uploadDocument(
 }
 
 export const fleet = {
+  rideSettings: {
+    get: () => get<RideSettings>('/ride-settings'),
+    update: (input: Partial<RideSettings>) => send<RideSettings>('PUT', '/ride-settings', input),
+  },
+  availability: () => get<Availability>('/availability'),
   requirements: {
     get: () => get<{ driver: RequirementDef[]; vehicle: RequirementDef[] }>('/requirements'),
     update: (input: { driver?: Record<string, boolean>; vehicle?: Record<string, boolean> }) =>

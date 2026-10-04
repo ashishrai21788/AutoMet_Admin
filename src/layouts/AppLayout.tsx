@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
   BadgeCheck, Building2, Calculator, Car, CarFront, CircleUserRound, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
-  ShieldCheck, Settings, Users, X,
+  ShieldCheck, Settings, SlidersHorizontal, Users, X,
 } from 'lucide-react'
 import { api } from '@/api'
 import { useAuth } from '@/store/auth'
@@ -23,6 +23,7 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/drivers', label: 'Drivers', icon: Users, permission: 'drivers.view' },
   { to: '/vehicles', label: 'Vehicles', icon: CarFront, permission: 'vehicles.view' },
   { to: '/verification', label: 'Driver Verification', icon: BadgeCheck, permission: 'documents.view' },
+  { to: '/ride-settings', label: 'Ride Settings', icon: SlidersHorizontal, permission: 'dashboard.view' },
   { to: '/settings', label: 'Business Settings', icon: Settings, permission: 'settings.manage' },
   { to: '/account', label: 'Admin Profile', icon: CircleUserRound, permission: 'dashboard.view' },
 ]
