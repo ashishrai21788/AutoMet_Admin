@@ -4,6 +4,7 @@ import { useCategories, useRegions, useTrips } from '@/api/hooks'
 import { dayEndIso, dayStartIso, fmtDateTime, fmtMoney, regionLabel, useDebounced } from '@/lib/labels'
 import type { TripItem } from '@/lib/types'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
+import ExportButton from '@/components/ExportButton'
 import { TripStatusBadge } from '@/components/StatusBadge'
 import { Alert, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
 
@@ -52,12 +53,13 @@ export default function Trips() {
     { header: 'Driver', cell: (t) => <span className="text-sm">{t.driver.name ?? t.driver.id}</span> },
     { header: 'Route', cell: (t) => <RouteCell from={t.pickup} to={t.drop} /> },
     { header: 'Fare', cell: (t) => <div className="whitespace-nowrap text-sm">{fmtMoney(t.fare, t.currency)}{t.fare !== null && t.fareBasis === 'ESTIMATE' && <div className="text-xs text-muted">estimate</div>}</div> },
-    { header: 'Status', cell: (t) => <TripStatusBadge status={t.status} /> },
+    { header: 'Status', cell: (t) => <TripStatusBadge status={t.status} cancelledBy={t.cancelledBy} /> },
   ]
 
   return (
     <>
-      <PageHeader title="Trips" subtitle="Every ride request of this business, from search to completion. The list refreshes every 30 seconds." />
+      <PageHeader title="Trips" subtitle="Every ride request of this business, from search to completion. The list refreshes every 30 seconds."
+        action={<ExportButton fileName="trips.csv" path={`/api/admin/business/export/trips.csv?${new URLSearchParams(Object.entries({ statusGroup: group, regionId, categoryId, from: from || undefined, to: to || undefined, driverId: params.get('driverId') ?? undefined }).filter(([, v]) => v) as [string, string][]).toString()}`} />} />
       <div className="mb-4 flex flex-wrap gap-1" role="tablist" aria-label="Trip status">
         {GROUPS.map(([k, label]) => (
           <button key={k || 'all'} type="button" role="tab" aria-selected={group === k} onClick={() => setGroup(k)}

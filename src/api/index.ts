@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AlertsPayload, AuditPage, LiveMapData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -62,6 +62,40 @@ async function request<T>(path: string, init: RequestInit & { business?: boolean
   return (body?.data ?? body) as T
 }
 
+/**
+ * Downloads a CSV the server builds. The file is fetched with the same sign-in and business headers as every other request
+ * (a plain link could not send them) and then handed to the browser as a download.
+ */
+export async function downloadFile(path: string, fallbackName: string): Promise<{ rows: number | null; truncated: boolean }> {
+  if (!API_CONFIGURED) throw new ApiError(NOT_CONFIGURED_MESSAGE, 0)
+  const token = useAuth.getState().session?.token
+  const appId = currentAppId()
+  let res: Response
+  try {
+    res = await fetch(`${BASE}${path}`, { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(appId ? { 'X-App-Id': appId } : {}) } })
+  } catch {
+    throw new ApiError('Cannot reach the server. Check your connection and try again.', 0)
+  }
+  if (res.status === 401 && token) useAuth.getState().logout()
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new ApiError(body?.message ?? `Download failed (${res.status})`, res.status, body?.errors ?? {})
+  }
+  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10000)
+  const header = res.headers.get('x-row-count')
+  const rows = header === null ? NaN : Number(header)
+  return { rows: Number.isFinite(rows) ? rows : null, truncated: res.headers.get('x-truncated') === 'true' }
+}
+
 const json = (body: unknown) => JSON.stringify(body)
 const q = (appId: string | null) => (appId ? `?tenantId=${encodeURIComponent(appId)}` : '')
 
@@ -74,6 +108,8 @@ export const api = {
   // platform (businesses and team)
   businesses: {
     list: () => request<Business[]>('/api/admin/tenants'),
+    update: (appId: string, input: { name?: string; appName?: string; city?: string; plan?: Business['plan'] }) =>
+      request<Business>(`/api/admin/tenants/${appId}`, { method: 'PATCH', body: json(input) }),
     create: (input: NewBusinessInput) => request<CreatedBusiness>('/api/admin/tenants', { method: 'POST', body: json(input) }),
     setStatus: (appId: string, status: Business['status']) =>
       request<Business>(`/api/admin/tenants/${appId}/status`, { method: 'PATCH', body: json({ status }) }),
@@ -83,6 +119,9 @@ export const api = {
     create: (input: NewUserInput) => request<CreatedUser>('/api/admin/users', { method: 'POST', body: json(input) }),
     setActive: (userId: string, active: boolean) =>
       request<AdminUser>(`/api/admin/users/${userId}/active`, { method: 'PATCH', body: json({ active }) }),
+    update: (userId: string, input: { name?: string; role?: NewUserInput['role'] }) =>
+      request<AdminUser>(`/api/admin/users/${userId}`, { method: 'PATCH', body: json(input) }),
+    resetPassword: (userId: string) => request<CreatedUser>(`/api/admin/users/${userId}/reset-password`, { method: 'POST' }),
   },
 
   // one business's configuration (the X-App-Id header names the business)
@@ -177,20 +216,29 @@ export function uploadDocument(
 
 export const platform = {
   overview: () => request<PlatformOverview>('/api/admin/platform/overview'),
+  audit: (params: Record<string, string | number | undefined>) => request<PlatformAuditPage>(`/api/admin/platform/audit${qs(params)}`),
 }
 
 export const ops = {
   audit: (params: Record<string, string | number | undefined>) => get<AuditPage>(`/audit${qs(params)}`),
   alerts: () => get<AlertsPayload>('/alerts'),
   liveMap: () => get<LiveMapData>('/live-map'),
+  support: {
+    list: (params: Record<string, string | number | undefined>) => get<IssuePage>(`/support/issues${qs(params)}`),
+    get: (id: string) => get<IssueDetail>(`/support/issues/${id}`),
+    update: (id: string, input: { status?: IssueStatus; note?: string }) => send<{ id: string; status: IssueStatus }>('POST', `/support/issues/${id}`, input),
+  },
+  report: (params: Record<string, string | number | undefined>) => get<ReportData>(`/reports/summary${qs(params)}`),
   stats: () => get<OpsStats>('/stats'),
   riders: {
     list: (params: Record<string, string | number | undefined>) => get<Paged<RiderItem>>(`/riders${qs(params)}`),
     get: (id: string) => get<RiderDetail>(`/riders/${id}`),
+    setStatus: (id: string, status: 'ACTIVE' | 'SUSPENDED', reason: string) => send<{ id: string; accountStatus: string }>('POST', `/riders/${id}/status`, { status, reason }),
   },
   trips: {
     list: (params: Record<string, string | number | undefined>) => get<Paged<TripItem>>(`/trips${qs(params)}`),
     get: (id: string) => get<TripDetail>(`/trips/${id}`),
+    cancel: (id: string, reason: string) => send<{ id: string; status: string }>('POST', `/trips/${id}/cancel`, { reason }),
   },
 }
 

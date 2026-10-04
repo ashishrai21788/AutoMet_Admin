@@ -85,6 +85,15 @@ export const useLiveMap = () => {
   const { tenantId } = useScope()
   return useQuery({ queryKey: ['biz', tenantId, 'live-map'], queryFn: ops.liveMap, enabled: !!tenantId, refetchInterval: (q) => (q.state.data?.refreshSeconds ?? 10) * 1000, placeholderData: keepPreviousData })
 }
+export function useReport(params: Params, enabled = true) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'report', params], queryFn: () => ops.report(params), enabled: !!tenantId && enabled, placeholderData: keepPreviousData })
+}
+export function useIssues(params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'issues', params], queryFn: () => ops.support.list(params), enabled: !!tenantId, placeholderData: keepPreviousData, refetchInterval: 60000 })
+}
+export const useIssue = (id: string) => useBusinessQuery(`issue:${id}`, () => ops.support.get(id), !!id)
 export const useOpsStats = (enabled = true) => {
   const { tenantId } = useScope()
   return useQuery({ queryKey: ['biz', tenantId, 'stats'], queryFn: ops.stats, enabled: !!tenantId && enabled, refetchInterval: 30000 })

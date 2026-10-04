@@ -17,11 +17,14 @@ export type Permission =
   | 'settings.manage'
   | 'team.manage'
   | 'audit.view'
+  | 'riders.manage'
+  | 'trips.manage'
+  | 'support.manage'
 
 const ALL: Permission[] = [
   'dashboard.view', 'clients.manage', 'drivers.view', 'drivers.manage', 'vehicles.view', 'vehicles.manage',
   'documents.view', 'verification.review', 'riders.view', 'trips.view', 'pricing.manage', 'payments.view',
-  'settings.manage', 'team.manage', 'audit.view',
+  'settings.manage', 'team.manage', 'audit.view', 'riders.manage', 'trips.manage', 'support.manage',
 ]
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -29,9 +32,9 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   client_admin: ALL.filter((p) => p !== 'clients.manage'),
   operations: [
     'dashboard.view', 'drivers.view', 'drivers.manage', 'vehicles.view', 'vehicles.manage', 'documents.view',
-    'verification.review', 'riders.view', 'trips.view',
+    'verification.review', 'riders.view', 'trips.view', 'riders.manage', 'trips.manage', 'support.manage',
   ],
-  support: ['dashboard.view', 'drivers.view', 'vehicles.view', 'riders.view', 'trips.view'],
+  support: ['dashboard.view', 'drivers.view', 'vehicles.view', 'riders.view', 'trips.view', 'support.manage'],
   finance: ['dashboard.view', 'trips.view', 'payments.view'],
 }
 

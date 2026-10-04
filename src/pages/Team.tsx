@@ -23,6 +23,9 @@ export default function Team() {
   const [form, setForm] = useState<NewUserInput>(blank)
   const [touched, setTouched] = useState(false)
   const [created, setCreated] = useState<CreatedUser | null>(null)
+  const [resetNotice, setResetNotice] = useState<{ title: string; email: string; password: string } | null>(null)
+  const [editing, setEditing] = useState<AdminUser | null>(null)
+  const [editForm, setEditForm] = useState<{ name: string; role: NewUserInput['role'] }>({ name: '', role: 'operations' })
 
   const businesses = useQuery({ queryKey: ['businesses'], queryFn: api.businesses.list })
   const users = useQuery({ queryKey: ['users', tenantId], queryFn: () => api.users.list(tenantId) })
@@ -36,6 +39,17 @@ export default function Team() {
   const setActive = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => api.users.setActive(id, active),
     onSuccess: (u) => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success(`${u.name} is now ${u.active === false ? 'inactive' : 'active'}`) },
+    onError: (e) => toast.error(e.message),
+  })
+
+  const update = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { name?: string; role?: NewUserInput['role'] } }) => api.users.update(id, input),
+    onSuccess: (u) => { qc.invalidateQueries({ queryKey: ['users'] }); setEditing(null); toast.success(`${u.name} was updated`) },
+    onError: (e) => { if (!(e instanceof ApiError) || Object.keys(e.fieldErrors).length === 0) toast.error(e.message) },
+  })
+  const reset = useMutation({
+    mutationFn: (id: string) => api.users.resetPassword(id),
+    onSuccess: (r) => { setCreated(null); setResetNotice({ title: `New one-time password for ${r.name}`, email: r.email, password: r.temporaryPassword }); toast.success('Password reset') },
     onError: (e) => toast.error(e.message),
   })
 
@@ -58,20 +72,32 @@ export default function Team() {
     setActive.mutate({ id: u.id, active: !deactivate })
   }
 
+  function openEdit(u: AdminUser) { setEditForm({ name: u.name, role: (u.role === 'super_admin' ? 'operations' : u.role) as NewUserInput['role'] }); update.reset(); setEditing(u) }
+
+  async function doReset(u: AdminUser) {
+    if (!(await confirm({ title: `Reset ${u.name}'s password?`, message: 'A new one-time password is created and shown to you once. They are signed out everywhere and must choose their own password at the next sign-in.', confirmLabel: 'Reset password', danger: true }))) return
+    reset.mutate(u.id)
+  }
+
   const columns: Column<AdminUser>[] = [
     { header: 'Name', cell: (u) => <span className="font-medium">{u.name}</span> },
     { header: 'Email', cell: (u) => u.email },
     { header: 'Role', cell: (u) => <Badge kind={u.role === 'super_admin' ? 'warn' : 'neutral'}>{ROLE_LABEL[u.role]}</Badge> },
     ...(isSuper ? [{ header: 'Business', cell: (u: AdminUser) => businessName(u.tenantId) } satisfies Column<AdminUser>] : []),
     { header: 'Status', cell: (u) => <Badge kind={u.active === false ? 'bad' : 'ok'}>{u.active === false ? 'Inactive' : 'Active'}</Badge> },
-    { header: 'Actions', hideLabel: true, className: 'text-right', cell: (u) => u.id !== user.id ? (
-      <Button variant={u.active === false ? 'ghost' : 'danger'} loading={setActive.isPending && setActive.variables?.id === u.id} onClick={() => toggle(u)}>{u.active === false ? 'Activate' : 'Deactivate'}</Button>
-    ) : null },
+    { header: 'Actions', hideLabel: true, className: 'text-right', cell: (u) => u.role === 'super_admin' ? null : (
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="ghost" onClick={() => openEdit(u)}>Edit</Button>
+        {u.id !== user.id && <Button variant="ghost" loading={reset.isPending && reset.variables === u.id} onClick={() => doReset(u)}>Reset password</Button>}
+        {u.id !== user.id && <Button variant={u.active === false ? 'ghost' : 'danger'} loading={setActive.isPending && setActive.variables?.id === u.id} onClick={() => toggle(u)}>{u.active === false ? 'Activate' : 'Deactivate'}</Button>}
+      </div>
+    ) },
   ]
 
   return (
     <>
       <PageHeader title="Team" subtitle="Admin accounts and their roles." action={<Button onClick={() => setShowForm(true)}>Add team member</Button>} />
+      {resetNotice && <SecretNotice title={resetNotice.title} email={resetNotice.email} password={resetNotice.password} onClose={() => setResetNotice(null)} />}
       {created && <SecretNotice title={`${created.name} was added`} email={created.email} password={created.temporaryPassword} onClose={() => setCreated(null)} />}
 
       <Card>
@@ -79,6 +105,20 @@ export default function Team() {
           <DataTable rows={users.data ?? []} columns={columns} rowKey={(u) => u.id} empty={{ title: 'No team members yet' }} />
         )}
       </Card>
+
+      {editing && (
+        <Modal title={`Edit ${editing.name}`} onClose={() => setEditing(null)}
+          footer={<><Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button><Button type="submit" form="edit-member" loading={update.isPending}>Save</Button></>}>
+          <form id="edit-member" noValidate className="space-y-4" onSubmit={(e) => { e.preventDefault(); update.mutate({ id: editing.id, input: { ...(editForm.name.trim() !== editing.name ? { name: editForm.name.trim() } : {}), ...(editForm.role !== editing.role && editing.id !== user.id ? { role: editForm.role } : {}) } }) }}>
+            <TextField label="Name" value={editForm.name} onChange={(e) => { setEditForm({ ...editForm, name: e.target.value }); update.reset() }} error={update.error instanceof ApiError ? update.error.fieldErrors.name : undefined} />
+            <SelectField label="Role" value={editForm.role} disabled={editing.id === user.id} onChange={(e) => { setEditForm({ ...editForm, role: e.target.value as NewUserInput['role'] }); update.reset() }} error={update.error instanceof ApiError ? update.error.fieldErrors.role : undefined}>
+              {ASSIGNABLE.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+            </SelectField>
+            {editing.id === user.id ? <p className="text-xs text-muted">You cannot change your own role.</p> : <p className="text-xs text-muted">Changing the role signs this person out; they sign in again with the new access.</p>}
+            {update.isError && !(update.error instanceof ApiError && Object.keys(update.error.fieldErrors).length) && <p role="alert" className="text-sm text-danger">{update.error.message}</p>}
+          </form>
+        </Modal>
+      )}
 
       {showForm && (
         <Modal title="Add team member" onClose={() => { setShowForm(false); create.reset() }}

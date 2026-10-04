@@ -3,6 +3,7 @@ import { useAudit } from '@/api/hooks'
 import { dayEndIso, dayStartIso, fmtDateTime, useDebounced } from '@/lib/labels'
 import type { AuditEntry } from '@/lib/types'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
+import ExportButton from '@/components/ExportButton'
 import { Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
 
 const PAGE_SIZE = 20
@@ -46,7 +47,8 @@ export default function AuditLog() {
 
   return (
     <>
-      <PageHeader title="Audit log" subtitle="Who did what in this business. Secrets, document numbers and file links are never recorded here." />
+      <PageHeader title="Audit log" subtitle="Who did what in this business. Secrets, document numbers and file links are never recorded here."
+        action={<ExportButton fileName="audit-log.csv" path={`/api/admin/business/audit.csv?${new URLSearchParams(Object.entries({ q, action, actor, targetType, from: dayStartIso(from), to: dayEndIso(to) }).filter(([, v]) => v) as [string, string][]).toString()}`} />} />
       <Card>
         <div className="flex flex-wrap items-end gap-3 border-b border-line p-4">
           <div className="min-w-[12rem] flex-1"><SearchInput value={search} onChange={setSearch} placeholder="Search who, action or target" /></div>

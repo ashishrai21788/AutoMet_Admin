@@ -35,14 +35,15 @@ export function EligibleBadge({ eligible }: { eligible: boolean }) {
 const TRIP_LABEL: Record<string, string> = {
   REQUESTED: 'Searching', ACCEPTED: 'Driver assigned', DRIVER_ON_THE_WAY: 'Driver on the way', ARRIVED: 'Driver arrived', ON_GOING: 'In progress',
   COMPLETED: 'Completed', REJECTED: 'Declined', REJECTED_WITH_REASON: 'Declined', NO_RESPONSE: 'No response',
-  CANCELLED_BY_USER: 'Cancelled by rider', CANCELLED_BY_USER_AFTER_ACCEPTANCE: 'Cancelled by rider',
+  CANCELLED_BY_USER: 'Cancelled by rider', CANCELLED_BY_USER_AFTER_ACCEPTANCE: 'Cancelled by rider', CANCELLED_BY_DRIVER: 'Cancelled by driver',
 }
 export const tripStatusLabel = (s: string) => TRIP_LABEL[s] ?? s
 
-export function TripStatusBadge({ status }: { status: string }) {
+export function TripStatusBadge({ status, cancelledBy }: { status: string; cancelledBy?: string | null }) {
   const kind = status === 'COMPLETED' ? 'ok' : status.startsWith('CANCELLED') || status.startsWith('REJECTED') || status === 'NO_RESPONSE' ? 'bad'
     : status === 'REQUESTED' ? 'warn' : 'neutral'
-  return <Badge kind={kind}>{tripStatusLabel(status)}</Badge>
+  // a trip an admin cancelled is stored with the rider-cancelled status the apps understand; the dashboard says who really did it
+  return <Badge kind={kind}>{cancelledBy === 'ADMIN' && status.startsWith('CANCELLED') ? 'Cancelled by support' : tripStatusLabel(status)}</Badge>
 }
 
 export function PresenceBadge({ presence, ageSeconds }: { presence: 'LIVE' | 'STALE' | 'NO_SIGNAL' | 'OFFLINE'; ageSeconds?: number | null }) {

@@ -9,6 +9,7 @@ import { can } from '@/lib/permissions'
 import { fmtDate, initials, regionLabel, timeAgo, useDebounced } from '@/lib/labels'
 import type { DriverListItem } from '@/lib/types'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
+import ExportButton from '@/components/ExportButton'
 import StatusModal from '@/components/StatusModal'
 import { AccountBadge, PresenceBadge, VerificationBadge } from '@/components/StatusBadge'
 import { Button, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
@@ -81,7 +82,7 @@ export default function Drivers() {
       <PageHeader
         title="Drivers"
         subtitle="Everyone who drives for this business. Verification and account status are separate: a driver must be active, verified and have a vehicle before getting rides."
-        action={canManage ? <Link to="/drivers/new"><Button><Plus size={15} aria-hidden /> Add driver</Button></Link> : undefined}
+        action={<div className="flex gap-2"><ExportButton path="/api/admin/business/export/drivers.csv" fileName="drivers.csv" />{canManage && <Link to="/drivers/new"><Button><Plus size={15} aria-hidden /> Add driver</Button></Link>}</div>}
       />
       <Card>
         <div className="grid gap-3 border-b border-line p-4 sm:grid-cols-2 lg:grid-cols-5">

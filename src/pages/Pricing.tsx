@@ -73,11 +73,12 @@ function PreviewPanel({ rule, errors, currency }: { rule: FareRuleFields; errors
   const [preview, setPreview] = useState<FarePreview | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const invalid = Object.keys(errors).length > 0
+  const shownPreview = invalid ? null : preview
   const ruleKey = JSON.stringify(rule)
   const tripKey = JSON.stringify(trip)
 
   useEffect(() => {
-    if (invalid) { setPreview(null); return }
+    if (invalid) return
     let cancelled = false
     const t = window.setTimeout(async () => {
       try {
@@ -111,14 +112,14 @@ function PreviewPanel({ rule, errors, currency }: { rule: FareRuleFields; errors
       <div className="mt-4 rounded-lg bg-black/[.03] p-3 text-sm dark:bg-white/5" aria-live="polite">
         {invalid ? <p className="text-muted">Complete the highlighted fields to see the estimate.</p>
           : problem ? <p role="alert" className="text-danger">{problem}</p>
-          : !preview ? <p className="text-muted">Calculating…</p> : (
+          : !shownPreview ? <p className="text-muted">Calculating…</p> : (
             <>
-              {preview.lines.map((l) => line(l.label, l.amount))}
-              {line('Ride charge', preview.fare, true)}
-              {preview.fees.map((l) => line(l.label, l.amount))}
-              {preview.taxes.map((l) => line(l.label, l.amount))}
-              {preview.discount > 0 && line('Discount', -preview.discount)}
-              {line('Estimated total', preview.total, true)}
+              {shownPreview.lines.map((l) => line(l.label, l.amount))}
+              {line('Ride charge', shownPreview.fare, true)}
+              {shownPreview.fees.map((l) => line(l.label, l.amount))}
+              {shownPreview.taxes.map((l) => line(l.label, l.amount))}
+              {shownPreview.discount > 0 && line('Discount', -shownPreview.discount)}
+              {line('Estimated total', shownPreview.total, true)}
             </>
           )}
       </div>
@@ -283,7 +284,7 @@ export default function Pricing() {
   const rules = useFareRules()
   const policies = usePolicies()
   const [categoryId, setCategoryId] = useState('')
-  const [scope, setScope] = useState(DEFAULT)
+  const [scopeChoice, setScope] = useState(DEFAULT)
   const complete = useBusinessMutation(api.business.completeSetup, { success: 'Setup confirmed' })
   const remove = useBusinessMutation((id: string) => api.business.deleteFareRule(id), { success: 'Fare rule removed' })
 
@@ -291,8 +292,7 @@ export default function Pricing() {
   const category = active.find((c) => c.id === categoryId) ?? active[0]
   const regionList = regions.data ?? NO_REGIONS
   const scopes = useMemo(() => category ? category.regionIds.map((id) => regionList.find((r) => r.id === id)).filter((r): r is Region => !!r && r.active) : [], [category, regionList])
-  useEffect(() => { if (category && categoryId !== category.id) setCategoryId(category.id) }, [category, categoryId])
-  useEffect(() => { if (scope !== DEFAULT && !scopes.some((r) => r.id === scope)) setScope(DEFAULT) }, [scope, scopes])
+  const scope = scopeChoice !== DEFAULT && !scopes.some((r) => r.id === scopeChoice) ? DEFAULT : scopeChoice
 
   const regionId = scope === DEFAULT ? null : scope
   const rule = category ? rules.data?.find((r) => r.categoryId === category.id && r.regionId === regionId) : undefined
@@ -334,7 +334,7 @@ export default function Pricing() {
     <>
       <PageHeader title="Pricing & Fare Rules" subtitle="Set how each vehicle category is priced, with optional overrides for individual regions." />
       <SetupGuide />
-      <div className="mb-6"><Alert kind="info">Rules saved here are stored for this business. The rider app will quote them once pricing is connected to bookings; live fares do not use them yet.</Alert></div>
+      <div className="mb-6"><Alert kind="info">Rules saved here price new ride requests for this business: the estimate a rider sees and the fare recorded on the trip. Cancellation fees are stored but not charged yet, and surge is a cap only (no automatic surge).</Alert></div>
 
       {setup.ready && !setup.complete && canEdit && (
         <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 border-ok/50 p-4">

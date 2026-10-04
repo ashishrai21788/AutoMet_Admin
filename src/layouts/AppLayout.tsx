@@ -3,8 +3,8 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  BadgeCheck, Bell, Building2, Calculator, Car, CarFront, CircleUserRound, Gauge, History, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
-  Map as MapIcon, Route, ShieldCheck, Settings, SlidersHorizontal, UserRound, Users, X,
+  BadgeCheck, BarChart3, Bell, Building2, Calculator, Car, CarFront, CircleUserRound, Gauge, History, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
+  LifeBuoy, Map as MapIcon, Route, ShieldCheck, Settings, SlidersHorizontal, UserRound, Users, X,
 } from 'lucide-react'
 import { api } from '@/api'
 import { useAlerts } from '@/api/hooks'
@@ -12,6 +12,7 @@ import { useAuth } from '@/store/auth'
 import { useUi } from '@/store/ui'
 import { can, isSuperAdmin, ROLE_LABEL, type Permission } from '@/lib/permissions'
 import { Badge } from '@/components/ui'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 type Icon = typeof MapPin
 interface NavItem { to: string; label: string; icon: Icon; permission: Permission; end?: boolean }
@@ -23,10 +24,12 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/pricing', label: 'Pricing & Fare Rules', icon: Calculator, permission: 'dashboard.view' },
   { to: '/live-map', label: 'Live Map', icon: MapIcon, permission: 'dashboard.view' },
   { to: '/trips', label: 'Trips', icon: Route, permission: 'trips.view' },
+  { to: '/reports', label: 'Reports', icon: BarChart3, permission: 'trips.view' },
   { to: '/drivers', label: 'Drivers', icon: Users, permission: 'drivers.view' },
   { to: '/riders', label: 'Riders', icon: UserRound, permission: 'riders.view' },
   { to: '/vehicles', label: 'Vehicles', icon: CarFront, permission: 'vehicles.view' },
   { to: '/verification', label: 'Driver Verification', icon: BadgeCheck, permission: 'documents.view' },
+  { to: '/support', label: 'Support', icon: LifeBuoy, permission: 'support.manage' },
   { to: '/alerts', label: 'Alerts', icon: Bell, permission: 'dashboard.view' },
   { to: '/ride-settings', label: 'Ride Settings', icon: SlidersHorizontal, permission: 'dashboard.view' },
   { to: '/audit', label: 'Audit Log', icon: History, permission: 'audit.view' },
@@ -93,6 +96,7 @@ export default function AppLayout() {
             {!mini && <p className="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-muted">Platform</p>}
             {link({ to: '/platform', label: 'Platform Overview', icon: Gauge, permission: 'clients.manage' }, mini)}
             {link({ to: '/businesses', label: 'Businesses', icon: Building2, permission: 'clients.manage' }, mini)}
+            {link({ to: '/platform-audit', label: 'Platform Audit', icon: History, permission: 'clients.manage' }, mini)}
             {!mini && <p className="px-3 pb-1 pt-4 text-xs font-medium uppercase tracking-wide text-muted">{current ? current.name : 'Business'}</p>}
             {mini && <hr className="my-2 border-line" />}
           </>
@@ -172,7 +176,7 @@ export default function AppLayout() {
         )}
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="mx-auto max-w-6xl"><Outlet /></div>
+          <div className="mx-auto max-w-6xl"><ErrorBoundary resetKey={location.pathname}><Outlet /></ErrorBoundary></div>
         </main>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useRiders } from '@/api/hooks'
 import { fmtDate, timeAgo, useDebounced } from '@/lib/labels'
 import type { RiderItem } from '@/lib/types'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
+import ExportButton from '@/components/ExportButton'
 import { Badge, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
 
 const PAGE_SIZE = 15
@@ -32,7 +33,7 @@ export default function Riders() {
 
   return (
     <>
-      <PageHeader title="Riders" subtitle="People who signed up through this business's rider app." />
+      <PageHeader title="Riders" subtitle="People who signed up through this business's rider app." action={<ExportButton path="/api/admin/business/export/riders.csv" fileName="riders.csv" />} />
       <Card>
         <div className="border-b border-line p-4"><div className="max-w-md"><SearchInput value={search} onChange={setSearch} placeholder="Search name, phone, email or ID" /></div></div>
         {list.isLoading ? <Spinner /> : list.isError ? <ErrorState error={list.error} onRetry={() => list.refetch()} /> : (

@@ -8,6 +8,7 @@ import AppLayout from '@/layouts/AppLayout'
 import Login from '@/pages/Login'
 import Businesses from '@/pages/Businesses'
 import Platform from '@/pages/Platform'
+import PlatformAudit from '@/pages/PlatformAudit'
 import Dashboard from '@/pages/Dashboard'
 import Regions from '@/pages/Regions'
 import Categories from '@/pages/Categories'
@@ -29,6 +30,9 @@ import { Spinner } from '@/components/ui'
 const LiveMap = lazy(() => import('@/pages/LiveMap'))
 import AuditLog from '@/pages/AuditLog'
 import Trips from '@/pages/Trips'
+import Reports from '@/pages/Reports'
+import Support from '@/pages/Support'
+import NotFound from '@/pages/NotFound'
 import TripDetail from '@/pages/TripDetail'
 import Riders from '@/pages/Riders'
 import RiderDetail from '@/pages/RiderDetail'
@@ -45,9 +49,11 @@ export default function App() {
             <Route element={<RequireAuth />}>
               <Route element={<AppLayout />}>
                 <Route path="account" element={<Account />} />
+                <Route path="*" element={<NotFound />} />
                 <Route element={<RequirePermission permission="clients.manage" />}>
                   <Route path="businesses" element={<Businesses />} />
                   <Route path="platform" element={<Platform />} />
+                  <Route path="platform-audit" element={<PlatformAudit />} />
                 </Route>
                 {/* every page below works on one business; the super admin picks it first */}
                 <Route element={<BusinessGate />}>
@@ -64,11 +70,15 @@ export default function App() {
                   </Route>
                   <Route element={<RequirePermission permission="trips.view" />}>
                     <Route path="trips" element={<Trips />} />
+                    <Route path="reports" element={<Reports />} />
                     <Route path="trips/:id" element={<TripDetail />} />
                   </Route>
                   <Route element={<RequirePermission permission="riders.view" />}>
                     <Route path="riders" element={<Riders />} />
                     <Route path="riders/:id" element={<RiderDetail />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="support.manage" />}>
+                    <Route path="support" element={<Support />} />
                   </Route>
                   <Route element={<RequirePermission permission="audit.view" />}>
                     <Route path="audit" element={<AuditLog />} />

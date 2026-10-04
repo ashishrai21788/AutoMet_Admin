@@ -475,7 +475,7 @@ export interface TripItem {
   distanceKm: number | null
   regionId: string | null
   categoryId: string | null
-  cancelledBy: 'USER' | 'DRIVER' | null
+  cancelledBy: 'USER' | 'DRIVER' | 'ADMIN' | null
 }
 
 export interface TripDetail extends TripItem {
@@ -500,6 +500,8 @@ export interface RiderItem {
   email: string
   phoneVerified: boolean
   accountStatus: string
+  suspendedAt: string | null
+  suspendedReason: string | null
   registeredAt: string | null
   lastActiveAt: string | null
   trips: { total: number; completed: number; cancelled: number }
@@ -604,3 +606,60 @@ export interface LiveMapData {
   counts: { live: number; stale: number; noSignal: number; eligibleLive: number; online: number; activeTrips: number; searching: number }
   partial: boolean
 }
+
+// ---- reports ----
+
+export interface ReportGroupRow { id: string; name: string; requested: number; completed: number; cancelled: number; unanswered: number; fares: number }
+
+export interface ReportData {
+  range: { from: string; to: string; timezone: string }
+  fromDay: string
+  toDay: string
+  currency: string | null
+  partial: boolean
+  rowLimit: number
+  rides: {
+    requested: number; completed: number; cancelled: number; noDriver: number; stillOpen: number
+    completionRate: number; cancellationRate: number; noDriverRate: number
+    cancelledByRiders: number; cancelledByDrivers: number
+    avgResponseMinutes: number | null; avgTripMinutes: number | null; avgDistanceKm: number | null; avgFare: number | null
+  }
+  finance: {
+    grossFares: number; bookingFees: number; taxes: number; completedTrips: number; estimatedFares: number; basis: string
+    byPaymentMode: { mode: string; trips: number; fares: number }[]
+    unavailable: string[]
+  }
+  byDay: { date: string; requested: number; completed: number; cancelled: number; unanswered: number; fares: number }[]
+  byCategory: ReportGroupRow[]
+  byRegion: ReportGroupRow[]
+  drivers: { id: string; name: string; offered: number; accepted: number; declined: number; noResponse: number; completed: number; cancelled: number; fares: number; acceptanceRate: number }[]
+}
+
+// ---- support inbox (problems drivers report from the driver app) ----
+
+export type IssueStatus = 'issue submitted' | 'under process' | 'complete'
+
+export interface IssueItem {
+  id: string
+  driverId: string
+  driverName: string
+  driverPhone: string | null
+  text: string
+  imageCount: number
+  status: IssueStatus
+  statusLabel: string
+  createdAt: string
+  updatedAt: string
+  resolvedAt: string | null
+  noteCount: number
+}
+
+export interface IssueDetail extends IssueItem {
+  imageUrls: string[]
+  notes: { at: string; by: string; text: string; status: IssueStatus | null }[]
+}
+
+export interface IssuePage extends Paged<IssueItem> { open: number }
+
+export interface PlatformAuditEntry extends AuditEntry { tenantId: string | null; businessName: string }
+export type PlatformAuditPage = Paged<PlatformAuditEntry>
