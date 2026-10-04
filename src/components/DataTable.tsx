@@ -61,7 +61,8 @@ export default function DataTable<T>({
   const clickable = onRowClick ? 'cursor-pointer hover:bg-black/[.03] dark:hover:bg-white/5' : ''
   return (
     <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'} aria-busy={loading}>
-      <div className="hidden overflow-x-auto sm:block">
+      {/* relative: the screen-reader-only header labels are absolutely positioned and must stay inside this scroller */}
+      <div className="relative hidden overflow-x-auto sm:block">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-line text-xs text-muted">
             <tr>{columns.map((c) => <th key={c.header} scope="col" className={`px-4 py-3 font-medium ${c.className ?? ''}`}>{c.hideLabel ? <span className="sr-only">{c.header}</span> : c.header}</th>)}</tr>
