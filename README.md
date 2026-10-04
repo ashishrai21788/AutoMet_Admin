@@ -34,7 +34,7 @@ To use a real backend, set `VITE_API_BASE_URL` to its URL.
 
 1. Import the repo in Vercel (framework preset: Vite; build `npm run build`; output `dist`). `vercel.json` rewrites all routes to `index.html`.
 2. Environment variable: `VITE_API_BASE_URL` = the backend URL.
-3. Add the Vercel domain to the backend's CORS allow-list.
+3. The backend currently allows requests from any origin (no allow-list to update). It must allow the `X-App-Id` request header, which the current backend does; restrict origins before launch.
 4. The first super admin is created by the backend from `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` (see the backend's `ADMIN_API.md`).
 
 ## Backend contract
