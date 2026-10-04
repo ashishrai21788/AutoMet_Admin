@@ -13,13 +13,14 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_RE = /^\+?[0-9 ()-]{6,20}$/
 
 function SettingsForm({ business, canEdit }: { business: Business; canEdit: boolean }) {
-  const [form, setForm] = useState({ name: business.name, appName: business.appName, brandColor: business.brandColor, supportEmail: business.supportEmail, supportPhone: business.supportPhone })
+  const [form, setForm] = useState({ name: business.name, appName: business.appName, brandColor: business.brandColor, logoUrl: business.logoUrl ?? '', supportEmail: business.supportEmail, supportPhone: business.supportPhone })
   const [touched, setTouched] = useState(false)
   const save = useBusinessMutation(api.business.updateSettings, { success: 'Business settings saved' })
 
   const local: Record<string, string> = {}
   if (form.name.trim().length < 2) local.name = 'Business name is required'
   if (form.appName.trim().length < 2) local.appName = 'App name is required'
+  if (form.logoUrl.trim() && !/^https:\/\/\S{3,290}$/i.test(form.logoUrl.trim())) local.logoUrl = 'Use a link that starts with https://'
   if (form.supportEmail.trim() && !EMAIL_RE.test(form.supportEmail.trim())) local.supportEmail = 'Enter a valid email address'
   if (form.supportPhone.trim() && !PHONE_RE.test(form.supportPhone.trim())) local.supportPhone = 'Enter a valid phone number'
   const fe = { ...(touched ? local : {}), ...save.fieldErrors }
@@ -28,7 +29,7 @@ function SettingsForm({ business, canEdit }: { business: Business; canEdit: bool
   function submit(e: FormEvent) {
     e.preventDefault()
     setTouched(true)
-    if (Object.keys(local).length === 0) save.mutate({ name: form.name.trim(), appName: form.appName.trim(), brandColor: form.brandColor, supportEmail: form.supportEmail.trim(), supportPhone: form.supportPhone.trim() })
+    if (Object.keys(local).length === 0) save.mutate({ name: form.name.trim(), appName: form.appName.trim(), brandColor: form.brandColor, logoUrl: form.logoUrl.trim(), supportEmail: form.supportEmail.trim(), supportPhone: form.supportPhone.trim() })
   }
 
   return (
@@ -38,7 +39,7 @@ function SettingsForm({ business, canEdit }: { business: Business; canEdit: bool
           <TextField label="Business name" value={form.name} maxLength={80} onChange={set('name')} error={fe.name} />
           <TextField label="App name (shown to riders)" value={form.appName} maxLength={40} onChange={set('appName')} error={fe.appName} />
           <TextField label="Brand colour" type="color" value={form.brandColor} onChange={set('brandColor')} error={fe.brandColor} className="[&_input]:h-10 [&_input]:p-1" />
-          <div />
+          <TextField label="Logo link (optional)" type="url" value={form.logoUrl} onChange={set('logoUrl')} error={fe.logoUrl} placeholder="https://…" />
           <TextField label="Support email" type="email" value={form.supportEmail} onChange={set('supportEmail')} error={fe.supportEmail} />
           <TextField label="Support phone" type="tel" value={form.supportPhone} onChange={set('supportPhone')} error={fe.supportPhone} />
         </fieldset>

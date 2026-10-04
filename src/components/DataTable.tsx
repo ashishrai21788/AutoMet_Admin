@@ -79,7 +79,7 @@ export default function DataTable<T>({
 
       <ul className="divide-y divide-line sm:hidden">
         {slice.map((row) => (
-          <li key={rowKey(row)} className="space-y-1.5 px-4 py-3 text-sm">
+          <li key={rowKey(row)} onClick={onRowClick ? () => onRowClick(row) : undefined} className={`space-y-1.5 px-4 py-3 text-sm ${clickable}`}>
             {columns.map((c) => (
               <div key={c.header} className={c.hideLabel ? 'pt-1' : 'flex justify-between gap-3'}>
                 {!c.hideLabel && <span className="text-muted">{c.header}</span>}

@@ -18,6 +18,8 @@ export interface Business {
   plan: 'trial' | 'standard' | 'enterprise'
   status: 'active' | 'trial' | 'suspended'
   brandColor: string
+  /** https link to the logo shown in the business's apps; empty when none. */
+  logoUrl: string
   supportEmail: string
   supportPhone: string
   market: Market | null
@@ -398,4 +400,146 @@ export interface Availability {
   blockedBy: Record<string, number>
   truncated: boolean
   settings: RideSettings
+}
+
+// ---- operations: audit log, alerts, statistics, riders, trips ----
+
+export interface AuditEntry {
+  id: string
+  at: string
+  action: string
+  actorEmail: string | null
+  targetType: string | null
+  targetId: string | null
+  details: Record<string, string> | null
+}
+
+export interface AuditPage extends Paged<AuditEntry> {
+  facets: { actions: string[]; targetTypes: string[]; actors: string[] }
+}
+
+export type AlertSeverity = 'critical' | 'warning' | 'info'
+
+export interface AlertItem {
+  kind: 'driver' | 'vehicle' | 'category' | 'region'
+  id: string
+  label: string
+  detail?: string
+}
+
+export interface OpsAlert {
+  id: string
+  severity: AlertSeverity
+  type: string
+  title: string
+  detail: string
+  count: number
+  items: AlertItem[]
+  more: number
+  link: string
+}
+
+export interface AlertsPayload {
+  alerts: OpsAlert[]
+  counts: Record<AlertSeverity, number>
+  generatedAt: string
+}
+
+export interface OpsStats {
+  drivers: { total: number; activeAccounts: number; eligible: number; online: number; onlineEligible: number; onlineNotEligible: number; partial: boolean }
+  trips: {
+    active: number; searching: number; requestedToday: number; completedToday: number; cancelledToday: number
+    acceptanceRate: number; cancellationRate: number; partial: boolean
+    last7Days: { date: string; requested: number; completed: number; cancelled: number }[]
+  }
+  revenue: { today: number; currency: string | null; basis: string; partial: boolean }
+  riders: { total: number; newThisWeek: number }
+  notAvailable: string[]
+}
+
+export type TripStatusGroup = 'searching' | 'active' | 'completed' | 'cancelled' | 'unanswered' | 'other'
+
+export interface TripItem {
+  id: string
+  requestedAt: string
+  status: string
+  statusGroup: TripStatusGroup
+  rider: { id: string; name: string | null; phone: string | null }
+  driver: { id: string; name: string | null }
+  pickup: string
+  drop: string
+  fare: number | null
+  currency: string | null
+  fareBasis: 'ESTIMATE' | 'ACTUAL' | null
+  paymentMode: string | null
+  distanceKm: number | null
+  regionId: string | null
+  categoryId: string | null
+  cancelledBy: 'USER' | 'DRIVER' | null
+}
+
+export interface TripDetail extends TripItem {
+  pickupPoint: { lat: number; lng: number } | null
+  dropPoint: { lat: number; lng: number } | null
+  region: { id: string; name: string } | null
+  category: { id: string; name: string } | null
+  note: string
+  fareDetail: { amount: number | null; currency: string | null; basis: string | null; source: string | null; breakdown: unknown; estimatedDurationMin: number | null }
+  cancellation: { by: string | null; stage: string | null; reason: string; at: string | null } | null
+  rejectReason: string
+  timeline: { label: string; at: string }[]
+  events: { event: string; at: string }[]
+  payment: { status: string | null; available: boolean }
+  rating: null
+}
+
+export interface RiderItem {
+  id: string
+  name: string
+  phone: string
+  email: string
+  phoneVerified: boolean
+  accountStatus: string
+  registeredAt: string | null
+  lastActiveAt: string | null
+  trips: { total: number; completed: number; cancelled: number }
+}
+
+export interface RiderDetail extends RiderItem {
+  recentTrips: TripItem[]
+}
+
+// ---- platform overview (super admin) ----
+
+export interface PlatformBusiness {
+  appId: string
+  name: string
+  appName: string
+  status: 'active' | 'trial' | 'suspended'
+  plan: string
+  isDefault: boolean
+  createdAt: string
+  drivers: { total: number; online: number; suspended: number }
+  riders: { total: number; newThisWeek: number }
+  admins: number
+  trips: { requestedToday: number; active: number; searching: number; last7Days: number }
+  setup: { percent: number; complete: boolean; nextStep: string | null }
+}
+
+export interface PlatformOverview {
+  totals: {
+    businesses: number; active: number; trial: number; suspended: number; setupComplete: number
+    drivers: number; driversOnline: number; riders: number; tripsToday: number; activeTrips: number; tripsLast7Days: number
+  }
+  businesses: PlatformBusiness[]
+  integrations: {
+    database: { configured: boolean; connected: boolean }
+    documentStorage: { provider: string | null; configured: boolean }
+    pushNotifications: { provider: string | null; configured: boolean }
+    adminSecurity: { configured: boolean }
+    otpDelivery: { provider: string | null; configured: boolean }
+    payments: { provider: string | null; configured: boolean }
+  }
+  partial: boolean
+  generatedAt: string
 }

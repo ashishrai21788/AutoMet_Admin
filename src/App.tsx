@@ -6,6 +6,7 @@ import BusinessGate from '@/components/BusinessGate'
 import AppLayout from '@/layouts/AppLayout'
 import Login from '@/pages/Login'
 import Businesses from '@/pages/Businesses'
+import Platform from '@/pages/Platform'
 import Dashboard from '@/pages/Dashboard'
 import Regions from '@/pages/Regions'
 import Categories from '@/pages/Categories'
@@ -20,6 +21,12 @@ import DriverDetail from '@/pages/DriverDetail'
 import Vehicles from '@/pages/Vehicles'
 import VehicleDetail from '@/pages/VehicleDetail'
 import Verification from '@/pages/Verification'
+import Alerts from '@/pages/Alerts'
+import AuditLog from '@/pages/AuditLog'
+import Trips from '@/pages/Trips'
+import TripDetail from '@/pages/TripDetail'
+import Riders from '@/pages/Riders'
+import RiderDetail from '@/pages/RiderDetail'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })
 
@@ -35,6 +42,7 @@ export default function App() {
                 <Route path="account" element={<Account />} />
                 <Route element={<RequirePermission permission="clients.manage" />}>
                   <Route path="businesses" element={<Businesses />} />
+                  <Route path="platform" element={<Platform />} />
                 </Route>
                 {/* every page below works on one business; the super admin picks it first */}
                 <Route element={<BusinessGate />}>
@@ -44,6 +52,20 @@ export default function App() {
                     <Route path="categories" element={<Categories />} />
                     <Route path="pricing" element={<Pricing />} />
                     <Route path="ride-settings" element={<RideSettings />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="dashboard.view" />}>
+                    <Route path="alerts" element={<Alerts />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="trips.view" />}>
+                    <Route path="trips" element={<Trips />} />
+                    <Route path="trips/:id" element={<TripDetail />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="riders.view" />}>
+                    <Route path="riders" element={<Riders />} />
+                    <Route path="riders/:id" element={<RiderDetail />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="audit.view" />}>
+                    <Route path="audit" element={<AuditLog />} />
                   </Route>
                   <Route element={<RequirePermission permission="drivers.view" />}>
                     <Route path="drivers" element={<Drivers />} />

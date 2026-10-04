@@ -3,10 +3,11 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
-  BadgeCheck, Building2, Calculator, Car, CarFront, CircleUserRound, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
-  ShieldCheck, Settings, SlidersHorizontal, Users, X,
+  BadgeCheck, Bell, Building2, Calculator, Car, CarFront, CircleUserRound, Gauge, History, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
+  Route, ShieldCheck, Settings, SlidersHorizontal, UserRound, Users, X,
 } from 'lucide-react'
 import { api } from '@/api'
+import { useAlerts } from '@/api/hooks'
 import { useAuth } from '@/store/auth'
 import { useUi } from '@/store/ui'
 import { can, isSuperAdmin, ROLE_LABEL, type Permission } from '@/lib/permissions'
@@ -20,13 +21,31 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/regions', label: 'Regions', icon: MapPin, permission: 'dashboard.view' },
   { to: '/categories', label: 'Vehicle Categories', icon: Car, permission: 'dashboard.view' },
   { to: '/pricing', label: 'Pricing & Fare Rules', icon: Calculator, permission: 'dashboard.view' },
+  { to: '/trips', label: 'Trips', icon: Route, permission: 'trips.view' },
   { to: '/drivers', label: 'Drivers', icon: Users, permission: 'drivers.view' },
+  { to: '/riders', label: 'Riders', icon: UserRound, permission: 'riders.view' },
   { to: '/vehicles', label: 'Vehicles', icon: CarFront, permission: 'vehicles.view' },
   { to: '/verification', label: 'Driver Verification', icon: BadgeCheck, permission: 'documents.view' },
+  { to: '/alerts', label: 'Alerts', icon: Bell, permission: 'dashboard.view' },
   { to: '/ride-settings', label: 'Ride Settings', icon: SlidersHorizontal, permission: 'dashboard.view' },
+  { to: '/audit', label: 'Audit Log', icon: History, permission: 'audit.view' },
   { to: '/settings', label: 'Business Settings', icon: Settings, permission: 'settings.manage' },
   { to: '/account', label: 'Admin Profile', icon: CircleUserRound, permission: 'dashboard.view' },
 ]
+
+/** Open critical and warning alerts, next to the Alerts menu item. Quiet when there are none or the list cannot be read. */
+function AlertCount({ mini }: { mini: boolean }) {
+  const alerts = useAlerts()
+  const counts = alerts.data?.counts
+  const n = counts ? counts.critical + counts.warning : 0
+  if (!n) return null
+  return (
+    <span
+      className={clsx('ml-auto rounded-full px-1.5 text-[11px] font-semibold tabular-nums', counts!.critical ? 'bg-danger text-white' : 'bg-brand text-black', mini && 'sr-only')}
+      aria-label={`${n} open alert${n === 1 ? '' : 's'}`}
+    >{n}</span>
+  )
+}
 
 export default function AppLayout() {
   const { session, activeTenantId, setActiveTenant, logout } = useAuth()
@@ -55,6 +74,7 @@ export default function AppLayout() {
     >
       <n.icon size={18} aria-hidden className="shrink-0" />
       <span className={clsx(mini && 'sr-only')}>{n.label}</span>
+      {n.to === '/alerts' && <AlertCount mini={mini} />}
     </NavLink>
   )
 
@@ -70,6 +90,7 @@ export default function AppLayout() {
         {superAdmin && (
           <>
             {!mini && <p className="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-muted">Platform</p>}
+            {link({ to: '/platform', label: 'Platform Overview', icon: Gauge, permission: 'clients.manage' }, mini)}
             {link({ to: '/businesses', label: 'Businesses', icon: Building2, permission: 'clients.manage' }, mini)}
             {!mini && <p className="px-3 pb-1 pt-4 text-xs font-medium uppercase tracking-wide text-muted">{current ? current.name : 'Business'}</p>}
             {mini && <hr className="my-2 border-line" />}

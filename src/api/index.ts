@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AlertsPayload, AuditPage, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -88,7 +88,7 @@ export const api = {
   // one business's configuration (the X-App-Id header names the business)
   business: {
     overview: () => request<Overview>('/api/admin/business/overview', { business: true }),
-    updateSettings: (input: Partial<Pick<Business, 'name' | 'appName' | 'brandColor' | 'supportEmail' | 'supportPhone'>>) =>
+    updateSettings: (input: Partial<Pick<Business, 'name' | 'appName' | 'brandColor' | 'logoUrl' | 'supportEmail' | 'supportPhone'>>) =>
       request<Business>('/api/admin/business/settings', { method: 'PUT', body: json(input), business: true }),
     setMarket: (market: Market) => request<Business>('/api/admin/business/market', { method: 'PUT', body: json(market), business: true }),
     completeSetup: () => request<SetupStatus>('/api/admin/business/setup/complete', { method: 'POST', business: true }),
@@ -173,6 +173,24 @@ export function uploadDocument(
     }
     xhr.send(form)
   })
+}
+
+export const platform = {
+  overview: () => request<PlatformOverview>('/api/admin/platform/overview'),
+}
+
+export const ops = {
+  audit: (params: Record<string, string | number | undefined>) => get<AuditPage>(`/audit${qs(params)}`),
+  alerts: () => get<AlertsPayload>('/alerts'),
+  stats: () => get<OpsStats>('/stats'),
+  riders: {
+    list: (params: Record<string, string | number | undefined>) => get<Paged<RiderItem>>(`/riders${qs(params)}`),
+    get: (id: string) => get<RiderDetail>(`/riders/${id}`),
+  },
+  trips: {
+    list: (params: Record<string, string | number | undefined>) => get<Paged<TripItem>>(`/trips${qs(params)}`),
+    get: (id: string) => get<TripDetail>(`/trips/${id}`),
+  },
 }
 
 export const fleet = {

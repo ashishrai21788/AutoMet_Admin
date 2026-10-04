@@ -31,3 +31,16 @@ export function DocumentBadge({ status }: { status: DocumentStatus | 'EXPIRED' }
 export function EligibleBadge({ eligible }: { eligible: boolean }) {
   return <Badge kind={eligible ? 'ok' : 'neutral'}>{eligible ? 'Eligible for rides' : 'Not eligible'}</Badge>
 }
+
+const TRIP_LABEL: Record<string, string> = {
+  REQUESTED: 'Searching', ACCEPTED: 'Driver assigned', DRIVER_ON_THE_WAY: 'Driver on the way', ARRIVED: 'Driver arrived', ON_GOING: 'In progress',
+  COMPLETED: 'Completed', REJECTED: 'Declined', REJECTED_WITH_REASON: 'Declined', NO_RESPONSE: 'No response',
+  CANCELLED_BY_USER: 'Cancelled by rider', CANCELLED_BY_USER_AFTER_ACCEPTANCE: 'Cancelled by rider',
+}
+export const tripStatusLabel = (s: string) => TRIP_LABEL[s] ?? s
+
+export function TripStatusBadge({ status }: { status: string }) {
+  const kind = status === 'COMPLETED' ? 'ok' : status.startsWith('CANCELLED') || status.startsWith('REJECTED') || status === 'NO_RESPONSE' ? 'bad'
+    : status === 'REQUESTED' ? 'warn' : 'neutral'
+  return <Badge kind={kind}>{tripStatusLabel(status)}</Badge>
+}

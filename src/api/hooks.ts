@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, ApiError, fleet } from '@/api'
+import { api, ApiError, fleet, ops } from '@/api'
 import { useScope } from '@/lib/useScope'
 import { loadGeo } from '@/lib/geo'
 import { useToast } from '@/components/feedback'
@@ -68,3 +68,29 @@ export const useDriverHistory = (id: string) => useBusinessQuery(`driver-history
 export const useVehicle = (id: string) => useBusinessQuery(`vehicle:${id}`, () => fleet.vehicles.get(id), !!id)
 export const useVehicleHistory = (id: string) => useBusinessQuery(`vehicle-history:${id}`, () => fleet.vehicles.history(id), !!id)
 export const useRequirements = () => useBusinessQuery('requirements', fleet.requirements.get)
+
+// ---- operations ----
+
+export function useAudit(params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'audit', params], queryFn: () => ops.audit(params), enabled: !!tenantId, placeholderData: keepPreviousData })
+}
+/** Alerts are worked out on the server from the live records; they are re-read every minute while a screen shows them. */
+export const useAlerts = (enabled = true) => {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'alerts'], queryFn: ops.alerts, enabled: !!tenantId && enabled, refetchInterval: 60000 })
+}
+export const useOpsStats = (enabled = true) => {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'stats'], queryFn: ops.stats, enabled: !!tenantId && enabled, refetchInterval: 30000 })
+}
+export function useRiders(params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'riders', params], queryFn: () => ops.riders.list(params), enabled: !!tenantId, placeholderData: keepPreviousData })
+}
+export const useRider = (id: string) => useBusinessQuery(`rider:${id}`, () => ops.riders.get(id), !!id)
+export function useTrips(params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'trips', params], queryFn: () => ops.trips.list(params), enabled: !!tenantId, placeholderData: keepPreviousData, refetchInterval: 30000 })
+}
+export const useTrip = (id: string) => useBusinessQuery(`trip:${id}`, () => ops.trips.get(id), !!id)

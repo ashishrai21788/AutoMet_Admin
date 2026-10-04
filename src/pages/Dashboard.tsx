@@ -5,7 +5,8 @@ import { api } from '@/api'
 import { useBusinessMutation, useOverview } from '@/api/hooks'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
-import { Alert, Badge, Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from '@/components/ui'
+import OperationsSection from '@/components/OperationsSection'
+import { Alert, Badge, Button, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
 
 const REDIRECT_KEY = 'automet-admin-setup-redirected'
 
@@ -117,12 +118,7 @@ export default function Dashboard() {
         </Card>
       )}
 
-      <Card className="mt-6">
-        <EmptyState
-          title="Rides, drivers and revenue"
-          text="Operational statistics are not available yet. They will appear here once this business's rider and driver apps send data tied to its App ID."
-        />
-      </Card>
+      <OperationsSection />
 
       {complete.isError && <div className="mt-4"><Alert kind="error">{complete.error.message}</Alert></div>}
     </>

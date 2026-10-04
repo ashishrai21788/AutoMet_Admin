@@ -1,4 +1,4 @@
-import { Outlet, Link } from 'react-router-dom'
+import { Navigate, Outlet, Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
 import { useAuth } from '@/store/auth'
@@ -8,10 +8,13 @@ import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from
 /** Business pages need a business. The super admin picks one here; a business user always has theirs. */
 export default function BusinessGate() {
   const { tenantId } = useScope()
+  const location = useLocation()
   const setActive = useAuth((s) => s.setActiveTenant)
   const list = useQuery({ queryKey: ['businesses'], queryFn: api.businesses.list, enabled: !tenantId })
 
   if (tenantId) return <Outlet />
+  // a super admin with no business chosen lands on the platform overview, which lists every business
+  if (location.pathname === '/') return <Navigate to="/platform" replace />
 
   return (
     <>
