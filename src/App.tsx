@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { FeedbackProvider } from '@/components/feedback'
+import { FeedbackProvider } from '@/components/FeedbackProvider'
 import { RequireAuth, RequirePermission } from '@/components/guards'
 import BusinessGate from '@/components/BusinessGate'
 import AppLayout from '@/layouts/AppLayout'

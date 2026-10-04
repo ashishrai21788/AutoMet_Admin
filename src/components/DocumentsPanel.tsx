@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, Eye, Upload, XCircle } from 'lucide-react'
 import { ApiError, fleet, uploadDocument, type DocumentKind } from '@/api'
@@ -42,6 +42,7 @@ function ViewerModal({ kind, docId, title, onClose }: { kind: DocumentKind; docI
 // ---------------- upload ----------------
 
 function UploadModal({ kind, subjectId, req, onClose, onDone }: { kind: DocumentKind; subjectId: string; req: DocumentRequirement; onClose: () => void; onDone: () => void }) {
+  const [today] = useState(() => new Date().toISOString().slice(0, 10)) // read once, so rendering never depends on the clock
   const toast = useToast()
   const input = useRef<HTMLInputElement>(null)
   const [number, setNumber] = useState('')
@@ -60,7 +61,7 @@ function UploadModal({ kind, subjectId, req, onClose, onDone }: { kind: Document
   if (req.needsNumber && !number.trim()) local.number = `${req.label} number is required`
   if (req.needsExpiry) {
     if (!expiry) local.expiryDate = 'Expiry date is required'
-    else if (expiry < new Date().toISOString().slice(0, 10)) local.expiryDate = 'This document has already expired'
+    else if (expiry < today) local.expiryDate = 'This document has already expired'
   }
   const fe = { ...(touched ? local : {}), ...server }
 
@@ -85,7 +86,7 @@ function UploadModal({ kind, subjectId, req, onClose, onDone }: { kind: Document
       <form id="upload-doc" onSubmit={submit} noValidate className="space-y-4">
         {resubmit && <Alert kind="info">Uploading a new file replaces the current one and sends it for review again. The earlier file stays on record.</Alert>}
         {req.needsNumber && <TextField label={`${req.label} number`} value={number} maxLength={60} onChange={(e) => { setNumber(e.target.value); setServer({}) }} error={fe.number} />}
-        {req.needsExpiry && <TextField label="Expiry date" type="date" value={expiry} min={new Date().toISOString().slice(0, 10)} onChange={(e) => { setExpiry(e.target.value); setServer({}) }} error={fe.expiryDate} />}
+        {req.needsExpiry && <TextField label="Expiry date" type="date" value={expiry} min={today} onChange={(e) => { setExpiry(e.target.value); setServer({}) }} error={fe.expiryDate} />}
         <Field label="File (JPEG, PNG, WebP or PDF, up to 5 MB)" error={fe.file}>
           {(p) => (
             <input {...p} ref={input} type="file" accept={ACCEPT} className={`${p.className} file:mr-3 file:rounded file:border-0 file:bg-brand file:px-3 file:py-1 file:text-sm file:font-medium file:text-brand-fg`}
@@ -169,8 +170,10 @@ export default function DocumentsPanel({ kind, subjectId, canUpload, compact }: 
     queryFn: () => (kind === 'drivers' ? fleet.drivers.documents(subjectId) : fleet.vehicles.documents(subjectId)),
     enabled: !!tenantId && !!subjectId,
   })
-  const [dialog, setDialog] = useState<Dialog>(null)
-  useEffect(() => setDialog(null), [subjectId])
+  // the open dialog belongs to one driver or vehicle: another one starts with none, without an effect
+  const [dialogFor, setDialogFor] = useState<{ subjectId: string; dialog: Dialog }>({ subjectId, dialog: null })
+  const dialog = dialogFor.subjectId === subjectId ? dialogFor.dialog : null
+  const setDialog = (d: Dialog) => setDialogFor({ subjectId, dialog: d })
 
   const refresh = () => { void qc.invalidateQueries({ queryKey: ['biz', tenantId] }); setDialog(null) }
 

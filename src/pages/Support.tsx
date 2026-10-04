@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
+import { usePage } from '@/lib/usePage'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { ExternalLink } from 'lucide-react'
@@ -24,7 +25,6 @@ function IssuePanel({ id }: { id: string }) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  useEffect(() => { setStatus(''); setNote(''); setErrors({}) }, [id])
 
   if (issue.isLoading) return <Spinner />
   if (issue.isError) return <ErrorState error={issue.error} onRetry={() => issue.refetch()} />
@@ -50,7 +50,7 @@ function IssuePanel({ id }: { id: string }) {
     <div className="space-y-4">
       <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <div><div className="font-semibold">{d.driverName}</div><div className="text-xs text-muted">{d.driverPhone ?? d.driverId} · reported {fmtDateTime(d.createdAt)}</div></div>
+          <div><div className="flex items-center gap-2 font-semibold">{d.driverName}<Badge>{d.reporterType === 'rider' ? 'Rider' : 'Driver'}</Badge></div><div className="text-xs text-muted">{d.driverPhone ?? d.reporterId} · reported {fmtDateTime(d.createdAt)}</div></div>
           <IssueBadge status={d.status} />
         </div>
         <p className="mt-4 whitespace-pre-wrap break-words text-sm">{d.text}</p>
@@ -60,7 +60,10 @@ function IssuePanel({ id }: { id: string }) {
           </ul>
         )}
         {d.imageCount > d.imageUrls.length && <p className="mt-2 text-xs text-muted">{d.imageCount - d.imageUrls.length} attachment(s) are not shown because they are not secure links.</p>}
-        <Link to={`/drivers/${d.driverId}`} className="mt-3 inline-block"><Button variant="ghost">Open driver</Button></Link>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link to={d.reporterType === 'rider' ? `/riders/${d.reporterId}` : `/drivers/${d.reporterId}`}><Button variant="ghost">{d.reporterType === 'rider' ? 'Open rider' : 'Open driver'}</Button></Link>
+          {d.tripId && <Link to={`/trips/${d.tripId}`}><Button variant="ghost">Open trip {d.tripId}</Button></Link>}
+        </div>
       </Card>
 
       <Card className="p-5">
@@ -97,9 +100,8 @@ export default function Support() {
   const [params, setParams] = useSearchParams()
   const [status, setStatus] = useState<string>('')
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [status, q])
+  const [page, setPage] = usePage(JSON.stringify([status, q]))
   const list = useIssues({ status, q, page, pageSize: PAGE_SIZE })
   const selected = params.get('i') ?? ''
   const select = (id: string) => { const p = new URLSearchParams(params); p.set('i', id); setParams(p, { replace: true }) }
@@ -107,24 +109,24 @@ export default function Support() {
 
   return (
     <>
-      <PageHeader title="Support" subtitle="Problems drivers report from the driver app. Rider complaints are not collected yet." action={list.data ? <Badge kind={list.data.open ? 'warn' : 'ok'}>{list.data.open} open</Badge> : undefined} />
+      <PageHeader title="Support" subtitle="Problems reported by drivers and riders from the apps." action={list.data ? <Badge kind={list.data.open ? 'warn' : 'ok'}>{list.data.open} open</Badge> : undefined} />
       <div className="grid items-start gap-5 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <Card>
           <div className="space-y-3 border-b border-line p-4">
             <div role="tablist" aria-label="Status" className="flex flex-wrap gap-1">
               {TABS.map(([k, label]) => <button key={k || 'all'} type="button" role="tab" aria-selected={status === k} onClick={() => setStatus(k)} className={`rounded-full border px-3 py-1 text-sm ${status === k ? 'border-brand bg-brand/15 font-medium' : 'border-line text-muted hover:text-ink'}`}>{label}</button>)}
             </div>
-            <SearchInput value={search} onChange={setSearch} placeholder="Search text or driver" />
+            <SearchInput value={search} onChange={setSearch} placeholder="Search text or reporter" />
           </div>
           {list.isLoading ? <Spinner /> : list.isError ? <ErrorState error={list.error} onRetry={() => list.refetch()} /> : list.data!.items.length === 0 ? (
-            <EmptyState title={status || q ? 'No reports match' : 'No reports yet'} text={status || q ? 'Try another status or search.' : 'Reports appear here when a driver uses "Report an issue" in the driver app.'} />
+            <EmptyState title={status || q ? 'No reports match' : 'No reports yet'} text={status || q ? 'Try another status or search.' : 'Reports appear here when a driver or rider reports a problem from their app.'} />
           ) : (
             <>
               <ul className="divide-y divide-line" aria-label="Reports">
                 {list.data!.items.map((i: IssueItem) => (
                   <li key={i.id}>
                     <button type="button" onClick={() => select(i.id)} aria-current={i.id === selected} className={`block w-full px-4 py-3 text-left hover:bg-black/[.03] dark:hover:bg-white/5 ${i.id === selected ? 'bg-brand/10' : ''}`}>
-                      <div className="flex items-center justify-between gap-2"><span className="truncate text-sm font-medium">{i.driverName}</span><IssueBadge status={i.status} /></div>
+                      <div className="flex items-center justify-between gap-2"><span className="flex min-w-0 items-center gap-1.5"><span className="truncate text-sm font-medium">{i.driverName}</span><span className="shrink-0 text-[10px] uppercase tracking-wide text-muted">{i.reporterType}</span></span><IssueBadge status={i.status} /></div>
                       <p className="mt-0.5 line-clamp-2 text-xs text-muted">{i.text}</p>
                       <div className="mt-1 text-[11px] text-muted">{timeAgo(i.createdAt)}{i.noteCount ? ` · ${i.noteCount} note${i.noteCount === 1 ? '' : 's'}` : ''}{i.imageCount ? ` · ${i.imageCount} image${i.imageCount === 1 ? '' : 's'}` : ''}</div>
                     </button>
@@ -140,7 +142,7 @@ export default function Support() {
             </>
           )}
         </Card>
-        <div className="min-w-0">{selected ? <IssuePanel id={selected} /> : <Card><EmptyState title="Choose a report" text="Select a report on the left to read it, change its status and add notes." /></Card>}</div>
+        <div className="min-w-0">{selected ? <IssuePanel key={selected} id={selected} /> : <Card><EmptyState title="Choose a report" text="Select a report on the left to read it, change its status and add notes." /></Card>}</div>
       </div>
     </>
   )

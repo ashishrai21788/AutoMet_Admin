@@ -641,7 +641,11 @@ export type IssueStatus = 'issue submitted' | 'under process' | 'complete'
 
 export interface IssueItem {
   id: string
-  driverId: string
+  /** who reported it: a driver from the driver app, or a rider from the rider app */
+  reporterType: 'driver' | 'rider'
+  reporterId: string
+  tripId: string | null
+  driverId: string | null
   driverName: string
   driverPhone: string | null
   text: string

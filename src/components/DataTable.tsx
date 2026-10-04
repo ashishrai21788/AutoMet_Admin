@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { Button, EmptyState } from './ui'
 
@@ -51,9 +51,8 @@ export default function DataTable<T>({
   const size = paging ? paging.pageSize : pageSize
   const total = paging ? paging.total : rows.length
   const pages = Math.max(1, Math.ceil(total / size))
-  const page = paging ? paging.page - 1 : localPage
-  useEffect(() => { if (!paging && localPage > pages - 1) setLocalPage(pages - 1) }, [paging, localPage, pages])
-  const slice = paging ? rows : rows.slice(localPage * size, localPage * size + size)
+  const page = paging ? paging.page - 1 : Math.min(localPage, pages - 1) // the rows can shrink under the page the person is on
+  const slice = paging ? rows : rows.slice(page * size, page * size + size)
   const go = (p: number) => (paging ? paging.onPage(p + 1) : setLocalPage(p))
 
   if (total === 0 && rows.length === 0) return <EmptyState {...empty} />

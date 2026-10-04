@@ -1,27 +1,10 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import Modal from './Modal'
 import { Button } from './ui'
+import { ConfirmContext, ToastContext, type ConfirmOptions } from './feedback'
 
-// ---- toasts ----
 interface Toast { id: number; kind: 'success' | 'error'; text: string }
-const ToastContext = createContext<{ success: (t: string) => void; error: (t: string) => void } | null>(null)
-
-export function useToast() {
-  const ctx = useContext(ToastContext)
-  if (!ctx) throw new Error('useToast needs <FeedbackProvider>')
-  return ctx
-}
-
-// ---- confirmation dialog ----
-interface ConfirmOptions { title: string; message: string; confirmLabel?: string; danger?: boolean }
-const ConfirmContext = createContext<((o: ConfirmOptions) => Promise<boolean>) | null>(null)
-
-export function useConfirm() {
-  const ctx = useContext(ConfirmContext)
-  if (!ctx) throw new Error('useConfirm needs <FeedbackProvider>')
-  return ctx
-}
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])

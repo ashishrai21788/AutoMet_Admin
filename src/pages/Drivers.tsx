@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { usePage } from '@/lib/usePage'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
@@ -18,10 +19,10 @@ const PAGE_SIZE = 15
 const select = 'rounded-lg border border-line bg-bg px-3 py-2 text-sm'
 
 export function Avatar({ name, url, size = 36 }: { name: string; url: string | null; size?: number }) {
-  const [broken, setBroken] = useState(false)
-  useEffect(() => setBroken(false), [url])
-  return url && !broken
-    ? <img src={url} alt="" width={size} height={size} onError={() => setBroken(true)} className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />
+  // remembers which picture failed to load, so a different picture is tried again without an effect
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null)
+  return url && brokenUrl !== url
+    ? <img src={url} alt="" width={size} height={size} onError={() => setBrokenUrl(url)} className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />
     : <span aria-hidden className="grid shrink-0 place-items-center rounded-full bg-brand/20 text-xs font-semibold" style={{ width: size, height: size }}>{initials(name)}</span>
 }
 
@@ -36,10 +37,9 @@ export default function Drivers() {
   const [categoryId, setCategoryId] = useState('')
   const [verification, setVerification] = useState('')
   const [account, setAccount] = useState('')
-  const [page, setPage] = useState(1)
   const [statusFor, setStatusFor] = useState<DriverListItem | null>(null)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [q, regionId, categoryId, verification, account])
+  const [page, setPage] = usePage(JSON.stringify([q, regionId, categoryId, verification, account]))
 
   const regions = useRegions()
   const categories = useCategories()

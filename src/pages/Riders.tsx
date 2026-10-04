@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { usePage } from '@/lib/usePage'
 import { useNavigate } from 'react-router-dom'
 import { useRiders } from '@/api/hooks'
 import { fmtDate, timeAgo, useDebounced } from '@/lib/labels'
@@ -17,9 +18,8 @@ export function RiderStatus({ status }: { status: string }) {
 export default function Riders() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [q])
+  const [page, setPage] = usePage(JSON.stringify([q]))
   const list = useRiders({ q, page, pageSize: PAGE_SIZE })
 
   const columns: Column<RiderItem>[] = [

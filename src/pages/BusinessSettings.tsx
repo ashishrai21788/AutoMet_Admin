@@ -12,15 +12,62 @@ import { Badge, Button, Card, ErrorState, PageHeader, Spinner, TextField } from 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_RE = /^\+?[0-9 ()-]{6,20}$/
 
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+const MAX_LOGO = 1024 * 1024
+
+/** The business's logo, shown in its rider and driver apps. Uploaded as a file (JPEG, PNG or WebP, up to 1 MB). */
+function LogoCard({ business, canEdit }: { business: Business; canEdit: boolean }) {
+  const [problem, setProblem] = useState('')
+  const [broken, setBroken] = useState(false)
+  const upload = useBusinessMutation((file: File) => api.business.uploadLogo(file), { success: 'Logo updated', onSuccess: () => setBroken(false) })
+  const remove = useBusinessMutation(() => api.business.removeLogo(), { success: 'Logo removed' })
+  const fileError = problem || upload.fieldErrors.file || ''
+
+  function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // so the same file can be chosen again
+    if (!file) return
+    if (!LOGO_TYPES.includes(file.type)) { setProblem('Choose a JPEG, PNG or WebP image'); return }
+    if (file.size > MAX_LOGO) { setProblem('The logo must be 1 MB or smaller'); return }
+    setProblem('')
+    upload.mutate(file)
+  }
+
+  return (
+    <Card className="mb-6 p-5">
+      <h2 className="mb-3 font-semibold">Logo</h2>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-bg">
+          {business.logoUrl && !broken
+            ? <img src={business.logoUrl} alt={`${business.name} logo`} className="h-full w-full object-contain" onError={() => setBroken(true)} />
+            : <span className="px-2 text-center text-xs text-muted">{business.logoUrl ? 'Cannot load' : 'No logo'}</span>}
+        </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="text-sm text-muted">Shown in this business's rider and driver apps. JPEG, PNG or WebP, up to 1 MB. A square image works best.</p>
+          {canEdit && (
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex cursor-pointer items-center rounded-lg border border-line px-3 py-2 text-sm font-medium hover:bg-black/5 focus-within:outline-2 focus-within:outline-brand dark:hover:bg-white/5">
+                {upload.isPending ? 'Uploading…' : business.logoUrl ? 'Replace logo' : 'Upload logo'}
+                <input type="file" accept={LOGO_TYPES.join(',')} className="sr-only" disabled={upload.isPending} onChange={pick} />
+              </label>
+              {business.logoUrl && <Button variant="ghost" loading={remove.isPending} onClick={() => remove.mutate(undefined as never)}>Remove</Button>}
+            </div>
+          )}
+          {fileError && <p role="alert" className="text-sm text-danger">{fileError}</p>}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
 function SettingsForm({ business, canEdit }: { business: Business; canEdit: boolean }) {
-  const [form, setForm] = useState({ name: business.name, appName: business.appName, brandColor: business.brandColor, logoUrl: business.logoUrl ?? '', supportEmail: business.supportEmail, supportPhone: business.supportPhone })
+  const [form, setForm] = useState({ name: business.name, appName: business.appName, brandColor: business.brandColor, supportEmail: business.supportEmail, supportPhone: business.supportPhone })
   const [touched, setTouched] = useState(false)
   const save = useBusinessMutation(api.business.updateSettings, { success: 'Business settings saved' })
 
   const local: Record<string, string> = {}
   if (form.name.trim().length < 2) local.name = 'Business name is required'
   if (form.appName.trim().length < 2) local.appName = 'App name is required'
-  if (form.logoUrl.trim() && !/^https:\/\/\S{3,290}$/i.test(form.logoUrl.trim())) local.logoUrl = 'Use a link that starts with https://'
   if (form.supportEmail.trim() && !EMAIL_RE.test(form.supportEmail.trim())) local.supportEmail = 'Enter a valid email address'
   if (form.supportPhone.trim() && !PHONE_RE.test(form.supportPhone.trim())) local.supportPhone = 'Enter a valid phone number'
   const fe = { ...(touched ? local : {}), ...save.fieldErrors }
@@ -29,7 +76,7 @@ function SettingsForm({ business, canEdit }: { business: Business; canEdit: bool
   function submit(e: FormEvent) {
     e.preventDefault()
     setTouched(true)
-    if (Object.keys(local).length === 0) save.mutate({ name: form.name.trim(), appName: form.appName.trim(), brandColor: form.brandColor, logoUrl: form.logoUrl.trim(), supportEmail: form.supportEmail.trim(), supportPhone: form.supportPhone.trim() })
+    if (Object.keys(local).length === 0) save.mutate({ name: form.name.trim(), appName: form.appName.trim(), brandColor: form.brandColor, supportEmail: form.supportEmail.trim(), supportPhone: form.supportPhone.trim() })
   }
 
   return (
@@ -39,7 +86,7 @@ function SettingsForm({ business, canEdit }: { business: Business; canEdit: bool
           <TextField label="Business name" value={form.name} maxLength={80} onChange={set('name')} error={fe.name} />
           <TextField label="App name (shown to riders)" value={form.appName} maxLength={40} onChange={set('appName')} error={fe.appName} />
           <TextField label="Brand colour" type="color" value={form.brandColor} onChange={set('brandColor')} error={fe.brandColor} className="[&_input]:h-10 [&_input]:p-1" />
-          <TextField label="Logo link (optional)" type="url" value={form.logoUrl} onChange={set('logoUrl')} error={fe.logoUrl} placeholder="https://…" />
+          <div />
           <TextField label="Support email" type="email" value={form.supportEmail} onChange={set('supportEmail')} error={fe.supportEmail} />
           <TextField label="Support phone" type="tel" value={form.supportPhone} onChange={set('supportPhone')} error={fe.supportPhone} />
         </fieldset>
@@ -78,6 +125,7 @@ export default function BusinessSettings() {
         <p className="mt-3 text-xs text-muted">The App ID and package name are fixed. Contact the platform owner if a package name needs to change.</p>
       </Card>
 
+      <LogoCard business={b} canEdit={canEdit} />
       <SettingsForm business={b} canEdit={canEdit} />
 
       <RequirementsCard canEdit={canEdit} />

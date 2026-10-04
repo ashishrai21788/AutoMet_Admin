@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
@@ -57,14 +57,16 @@ export default function AppLayout() {
   const user = session!.user
   const navigate = useNavigate()
   const location = useLocation()
-  const [open, setOpen] = useState(false)
+  // the phone menu is open for one page only: moving to another page closes it without an effect
+  const [openOn, setOpenOn] = useState<string | null>(null)
+  const open = openOn === location.pathname
+  const setOpen = (v: boolean) => setOpenOn(v ? location.pathname : null)
   const superAdmin = isSuperAdmin(user)
 
   const businesses = useQuery({ queryKey: ['businesses'], queryFn: api.businesses.list })
   const currentId = superAdmin ? activeTenantId : user.tenantId
   const current = businesses.data?.find((b) => b.appId === currentId)
 
-  useEffect(() => setOpen(false), [location.pathname])
 
   const items = BUSINESS_NAV.filter((n) => can(user, n.permission))
   const link = (n: NavItem, mini: boolean) => (

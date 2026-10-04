@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
@@ -196,11 +196,12 @@ export default function DriverDetail() {
   const regions = useRegions()
   const canManage = can(user, 'drivers.manage')
   const tab = (TABS.find(([k]) => k === params.get('tab'))?.[0] ?? 'overview') as TabKey
-  const [edit, setEdit] = useState<'personal' | 'operating' | null>(null)
+  // undefined = not chosen yet: a "?edit=1" link opens the personal-information dialog
+  const [chosenEdit, setEdit] = useState<'personal' | 'operating' | null | undefined>(undefined)
   const [statusOpen, setStatusOpen] = useState(false)
   const regionById = useMemo(() => new Map((regions.data ?? []).map((r) => [r.id, r])), [regions.data])
 
-  useEffect(() => { if (params.get('edit') === '1' && canManage && query.data) { setEdit('personal'); const p = new URLSearchParams(params); p.delete('edit'); setParams(p, { replace: true }) } }, [params, canManage, query.data, setParams])
+  const editFromLink = params.get('edit') === '1' && canManage && !!query.data
 
   if (query.isLoading) return <Spinner />
   if (query.isError) {
@@ -210,6 +211,8 @@ export default function DriverDetail() {
       : <ErrorState error={query.error} onRetry={() => query.refetch()} />
   }
   const d = query.data!
+  const edit = chosenEdit === undefined ? (editFromLink ? 'personal' : null) : chosenEdit
+  const closeEdit = () => { setEdit(null); if (editFromLink) { const p = new URLSearchParams(params); p.delete('edit'); setParams(p, { replace: true }) } }
   const setTab = (k: TabKey) => { const p = new URLSearchParams(params); p.set('tab', k); setParams(p, { replace: true }) }
   const region = regionById.get(d.operatingRegionId ?? '')
   const addr = d.address ? [d.address.line, d.address.city, d.address.state, d.address.country].filter(Boolean).join(', ') : ''
@@ -237,7 +240,7 @@ export default function DriverDetail() {
       {tab === 'overview' && (
         <div className="grid gap-5 lg:grid-cols-2">
           <Card className="p-5"><h2 className="mb-3 font-semibold">Summary</h2>
-            <Dl rows={[['Account status', <AccountBadge status={d.accountStatus} />], ['Availability', <PresenceBadge presence={d.presence} ageSeconds={d.locationAgeSeconds} />], ['Current trip', d.currentTripId ? <Link className="hover:underline" to={`/trips/${d.currentTripId}`}>{d.currentTripId}</Link> : 'None'], ['Last seen', d.lastSeenAt ? `${timeAgo(d.lastSeenAt)} · ${fmtDateTime(d.lastSeenAt)}` : 'Never'], ['Verification', <VerificationBadge status={d.verificationStatus} />], ['Operating region', regionLabel(region)], ['Eligible category', d.eligibleCategoryName], ['Vehicle', d.vehicle ? <Link className="hover:underline" to={`/vehicles/${d.vehicle.id}`}>{d.vehicle.registrationNumber}</Link> : 'Not assigned'], ['Registered', fmtDate(d.createdAt)]]} />
+            <Dl rows={[['Account status', <AccountBadge key="v" status={d.accountStatus} />], ['Availability', <PresenceBadge key="v" presence={d.presence} ageSeconds={d.locationAgeSeconds} />], ['Current trip', d.currentTripId ? <Link key="v" className="hover:underline" to={`/trips/${d.currentTripId}`}>{d.currentTripId}</Link> : 'None'], ['Last seen', d.lastSeenAt ? `${timeAgo(d.lastSeenAt)} · ${fmtDateTime(d.lastSeenAt)}` : 'Never'], ['Verification', <VerificationBadge key="v" status={d.verificationStatus} />], ['Operating region', regionLabel(region)], ['Eligible category', d.eligibleCategoryName], ['Vehicle', d.vehicle ? <Link key="v" className="hover:underline" to={`/vehicles/${d.vehicle.id}`}>{d.vehicle.registrationNumber}</Link> : 'Not assigned'], ['Registered', fmtDate(d.createdAt)]]} />
           </Card>
           <Card className="p-5"><h2 className="mb-1 font-semibold">Ride eligibility</h2>
             <p className="mb-3 text-sm text-muted">Whether this driver could be offered rides. It is worked out from the account status, verification, region and vehicle; none of them alone is enough.</p>
@@ -284,7 +287,7 @@ export default function DriverDetail() {
         </Card>
       )}
 
-      {edit && <EditModal driver={d} section={edit} onClose={() => setEdit(null)} />}
+      {edit && <EditModal driver={d} section={edit} onClose={closeEdit} />}
       {statusOpen && (
         <StatusModal subject="driver" title={`Change status of ${d.name}`} current={d.accountStatus} onClose={() => setStatusOpen(false)}
           onSubmit={async (status, reason) => { await fleet.drivers.setStatus(d.id, status, reason); await qc.invalidateQueries({ queryKey: ['biz', tenantId] }) }} />

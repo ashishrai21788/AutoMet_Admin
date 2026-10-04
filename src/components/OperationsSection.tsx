@@ -4,7 +4,7 @@ import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import { fmtMoney } from '@/lib/labels'
 import type { OpsStats } from '@/lib/types'
-import { SEVERITY } from '@/pages/Alerts'
+import { SEVERITY } from '@/lib/severity'
 import { Badge, Card, ErrorState, Spinner } from '@/components/ui'
 
 function Stat({ label, value, hint, to }: { label: string; value: string | number; hint?: string; to?: string }) {

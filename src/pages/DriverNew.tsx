@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { ApiError, fleet, uploadDocument } from '@/api'
@@ -55,19 +55,20 @@ export default function DriverNew() {
   const [server, setServer] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [steps, setSteps] = useState<{ label: string; state: 'wait' | 'run' | 'done' | 'fail'; note?: string; progress?: number }[]>([])
-  const seeded = useRef(false)
-
-  // start from the business's own country: the dialling code and the address country
-  useEffect(() => {
-    if (seeded.current || !market || !geoQuery.data) return
-    seeded.current = true
+  // start from the business's own country (the dialling code and the address country), once, as soon as both are known
+  const [seeded, setSeeded] = useState(false)
+  if (!seeded && market && geoQuery.data) {
+    setSeeded(true)
     const dial = geoQuery.data.countries.find((c) => c.code === market.country)?.dialCode ?? ''
     setF((x) => ({ ...x, dial, country: market.country }))
-  }, [market, geoQuery.data])
+  }
+  // read once, so rendering never depends on the clock
+  const [now] = useState(() => new Date())
 
   const activeRegions = (regions.data ?? []).filter((r) => r.active)
   const offered = useMemo(() => (categories.data ?? []).filter((c) => c.active && (!f.regionId || c.regionIds.includes(f.regionId))), [categories.data, f.regionId])
-  useEffect(() => { if (f.categoryId && !offered.some((c) => c.id === f.categoryId)) setF((x) => ({ ...x, categoryId: '' })) }, [offered, f.categoryId])
+  // a category that the chosen region does not offer counts as not chosen
+  const categoryId = offered.some((c) => c.id === f.categoryId) ? f.categoryId : ''
 
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => { setF((x) => ({ ...x, [k]: e.target.value })); setServer({}) }
 
@@ -78,11 +79,11 @@ export default function DriverNew() {
   else if (digits.length < 6 || digits.length + f.dial.length > 15) local.phone = 'Enter the phone number without the country code'
   if (f.email.trim() && !EMAIL_RE.test(f.email.trim())) local.email = 'Enter a valid email address'
   if (f.dob) {
-    const limit = new Date(); limit.setFullYear(limit.getFullYear() - 18)
+    const limit = new Date(now); limit.setFullYear(limit.getFullYear() - 18)
     if (f.dob > limit.toISOString().slice(0, 10)) local.dob = 'The driver must be at least 18 years old'
   }
   if (!f.regionId) local.regionId = 'Choose the region this driver operates in'
-  if (!f.categoryId) local.categoryId = 'Choose the vehicle category this driver is eligible for'
+  if (!categoryId) local.categoryId = 'Choose the vehicle category this driver is eligible for'
   const licenceStarted = !!(licence.number || licence.expiry || licence.file)
   if (licenceStarted) {
     if (!licence.number.trim()) local['licence.number'] = 'Licence number is required'
@@ -111,7 +112,7 @@ export default function DriverNew() {
     const input: DriverInput = {
       fullName: f.fullName.trim(), phone: `+${f.dial}${digits}`, email: f.email.trim(), dateOfBirth: f.dob,
       address: { country: f.country, state: f.state.trim(), city: f.city.trim(), line: f.line.trim() },
-      operatingRegionId: f.regionId, eligibleCategoryId: f.categoryId,
+      operatingRegionId: f.regionId, eligibleCategoryId: categoryId,
     }
     let id: string
     try {
@@ -120,7 +121,6 @@ export default function DriverNew() {
       setBusy(false)
       if (err instanceof ApiError && Object.keys(err.fieldErrors).length) {
         const map: Record<string, string> = { ...err.fieldErrors }
-        if (map.phone) map.phone = map.phone // shown under the phone field
         setServer(map)
         toast.error(err.status === 409 ? 'This driver is already registered' : 'Please fix the highlighted fields')
       } else toast.error(err instanceof Error ? err.message : 'Could not add the driver')
@@ -213,7 +213,7 @@ export default function DriverNew() {
           <SelectField label="Operating region" required value={f.regionId} onChange={set('regionId')} error={fe.regionId ?? fe.operatingRegionId}>
             <option value="">Select a region…</option>{activeRegions.map((r) => <option key={r.id} value={r.id}>{regionLabel(r)}</option>)}
           </SelectField>
-          <SelectField label="Eligible vehicle category" required value={f.categoryId} onChange={set('categoryId')} error={fe.categoryId ?? fe.eligibleCategoryId}
+          <SelectField label="Eligible vehicle category" required value={categoryId} onChange={set('categoryId')} error={fe.categoryId ?? fe.eligibleCategoryId}
             hint={f.regionId && offered.length === 0 ? 'No category is offered in this region yet' : 'Only categories offered in the chosen region'}>
             <option value="">Select a category…</option>{offered.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </SelectField>

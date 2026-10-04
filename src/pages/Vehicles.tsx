@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { usePage } from '@/lib/usePage'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
@@ -118,11 +119,10 @@ export default function Vehicles() {
   const [status, setStatus] = useState('')
   const [verification, setVerification] = useState('')
   const [assignment, setAssignment] = useState('')
-  const [page, setPage] = useState(1)
   const [adding, setAdding] = useState(false)
   const [statusFor, setStatusFor] = useState<VehicleListItem | null>(null)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [q, categoryId, regionId, status, verification, assignment])
+  const [page, setPage] = usePage(JSON.stringify([q, categoryId, regionId, status, verification, assignment]))
 
   const regions = useRegions()
   const categories = useCategories()

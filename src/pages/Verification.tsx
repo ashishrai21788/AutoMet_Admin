@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { usePage } from '@/lib/usePage'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useDriverHistory, useDrivers, useVehicleHistory, useVehicles } from '@/api/hooks'
 import { useScope } from '@/lib/useScope'
@@ -43,9 +44,8 @@ function Pager({ page, total, onPage }: { page: number; total: number; onPage: (
 function DriversQueue({ status, search }: { status: Status; search: string }) {
   const { user } = useScope()
   const [params, setParams] = useSearchParams()
-  const [page, setPage] = useState(1)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [status, q])
+  const [page, setPage] = usePage(JSON.stringify([status, q]))
   const list = useDrivers({ verification: status, search: q, page, pageSize: PAGE_SIZE, sort: 'oldest' })
   const selected = params.get('d') ?? ''
   const history = useDriverHistory(selected)
@@ -101,9 +101,8 @@ function DriversQueue({ status, search }: { status: Status; search: string }) {
 function VehiclesQueue({ status, search }: { status: Status; search: string }) {
   const { user } = useScope()
   const [params, setParams] = useSearchParams()
-  const [page, setPage] = useState(1)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [status, q])
+  const [page, setPage] = usePage(JSON.stringify([status, q]))
   const list = useVehicles({ verification: status, search: q, page, pageSize: PAGE_SIZE })
   const selected = params.get('v') ?? ''
   const history = useVehicleHistory(selected)

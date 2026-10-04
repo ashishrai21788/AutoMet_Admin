@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, X } from 'lucide-react'
 import { api } from '@/api'
@@ -289,16 +289,17 @@ export default function Regions() {
   const overview = useOverview()
   const regions = useRegions()
   const geoQuery = useGeo()
-  const [adding, setAdding] = useState(false)
+  // undefined = not chosen yet: a "?new=1" link from the dashboard opens the add dialog
+  const [chosenAdding, setAdding] = useState<boolean | undefined>(undefined)
   const [editing, setEditing] = useState<Region | null>(null)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const toggleActive = useBusinessMutation((r: Region) => api.business.updateRegion(r.id, { active: !r.active }), { success: (r) => `${r.city} is now ${r.active ? 'active' : 'inactive'}` })
 
   // "?new=1" comes from the dashboard's quick action
-  useEffect(() => {
-    if (params.get('new') === '1' && overview.data?.business.market && canEdit) { setAdding(true); setParams({}, { replace: true }) }
-  }, [params, overview.data, canEdit, setParams])
+  const fromLink = params.get('new') === '1' && !!overview.data?.business.market && canEdit
+  const adding = chosenAdding ?? fromLink
+  const closeAdding = () => { setAdding(false); if (fromLink) setParams({}, { replace: true }) }
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -365,7 +366,7 @@ export default function Regions() {
 
       {business.market && (regions.data?.length ?? 0) > 0 && <LocateCard />}
 
-      {adding && business.market && <AddRegionsModal country={business.market.country} geo={geo} onClose={() => setAdding(false)} />}
+      {adding && business.market && <AddRegionsModal country={business.market.country} geo={geo} onClose={closeAdding} />}
       {editing && <EditRegionModal region={editing} onClose={() => setEditing(null)} />}
     </>
   )

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { usePage } from '@/lib/usePage'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useCategories, useRegions, useTrips } from '@/api/hooks'
 import { dayEndIso, dayStartIso, fmtDateTime, fmtMoney, regionLabel, useDebounced } from '@/lib/labels'
@@ -32,9 +33,8 @@ export default function Trips() {
   const [categoryId, setCategoryId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [page, setPage] = useState(1)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [group, q, regionId, categoryId, from, to])
+  const [page, setPage] = usePage(JSON.stringify([group, q, regionId, categoryId, from, to]))
 
   const regions = useRegions()
   const categories = useCategories()

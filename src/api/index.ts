@@ -96,6 +96,25 @@ export async function downloadFile(path: string, fallbackName: string): Promise<
   return { rows: Number.isFinite(rows) ? rows : null, truncated: res.headers.get('x-truncated') === 'true' }
 }
 
+/** Sends one file as multipart form data with the same sign-in and business headers as every other request. */
+export async function uploadFile<T>(path: string, file: File, field = 'file'): Promise<T> {
+  if (!API_CONFIGURED) throw new ApiError(NOT_CONFIGURED_MESSAGE, 0)
+  const token = useAuth.getState().session?.token
+  const appId = currentAppId()
+  const form = new FormData()
+  form.append(field, file)
+  let res: Response
+  try {
+    res = await fetch(`${BASE}${path}`, { method: 'POST', body: form, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(appId ? { 'X-App-Id': appId } : {}) } })
+  } catch {
+    throw new ApiError('Cannot reach the server. Check your connection and try again.', 0)
+  }
+  const body = await res.json().catch(() => ({}))
+  if (res.status === 401 && token) useAuth.getState().logout()
+  if (!res.ok) throw new ApiError(body?.message ?? `Upload failed (${res.status})`, res.status, body?.errors ?? {})
+  return (body?.data ?? body) as T
+}
+
 const json = (body: unknown) => JSON.stringify(body)
 const q = (appId: string | null) => (appId ? `?tenantId=${encodeURIComponent(appId)}` : '')
 
@@ -129,6 +148,8 @@ export const api = {
     overview: () => request<Overview>('/api/admin/business/overview', { business: true }),
     updateSettings: (input: Partial<Pick<Business, 'name' | 'appName' | 'brandColor' | 'logoUrl' | 'supportEmail' | 'supportPhone'>>) =>
       request<Business>('/api/admin/business/settings', { method: 'PUT', body: json(input), business: true }),
+    uploadLogo: (file: File) => uploadFile<{ logoUrl: string }>('/api/admin/business/logo', file),
+    removeLogo: () => request<{ logoUrl: string }>('/api/admin/business/logo', { method: 'DELETE', business: true }),
     setMarket: (market: Market) => request<Business>('/api/admin/business/market', { method: 'PUT', body: json(market), business: true }),
     completeSetup: () => request<SetupStatus>('/api/admin/business/setup/complete', { method: 'POST', business: true }),
 

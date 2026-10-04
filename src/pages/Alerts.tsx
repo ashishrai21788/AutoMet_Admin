@@ -1,15 +1,11 @@
 import { Link } from 'react-router-dom'
-import { AlertOctagon, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import { useAlerts } from '@/api/hooks'
 import { fmtDateTime } from '@/lib/labels'
-import type { AlertItem, AlertSeverity, OpsAlert } from '@/lib/types'
+import type { AlertItem, OpsAlert } from '@/lib/types'
+import { SEVERITY } from '@/lib/severity'
 import { Badge, Button, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
 
-export const SEVERITY: Record<AlertSeverity, { label: string; icon: typeof Info; badge: 'bad' | 'warn' | 'neutral'; ring: string }> = {
-  critical: { label: 'Critical', icon: AlertOctagon, badge: 'bad', ring: 'border-danger/50' },
-  warning: { label: 'Warning', icon: AlertTriangle, badge: 'warn', ring: 'border-brand/60' },
-  info: { label: 'For your information', icon: Info, badge: 'neutral', ring: 'border-line' },
-}
 
 /** Where an item of an alert opens. */
 const itemLink = (i: AlertItem, fallback: string) =>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ApiError, fleet } from '@/api'
 import { useRequirements } from '@/api/hooks'
@@ -38,11 +38,13 @@ export default function RequirementsCard({ canEdit }: { canEdit: boolean }) {
   const [vehicle, setVehicle] = useState<Draft>({})
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    if (!query.data) return
+  // the drafts start from what the server has, and again whenever it sends something new
+  const [seededFrom, setSeededFrom] = useState<unknown>(null)
+  if (query.data && seededFrom !== query.data) {
+    setSeededFrom(query.data)
     setDriver(Object.fromEntries(query.data.driver.map((r) => [r.type, r.mandatory])))
     setVehicle(Object.fromEntries(query.data.vehicle.map((r) => [r.type, r.mandatory])))
-  }, [query.data])
+  }
 
   async function save() {
     if (busy || !query.data) return

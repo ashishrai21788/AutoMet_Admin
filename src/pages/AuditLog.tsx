@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { usePage } from '@/lib/usePage'
 import { useAudit } from '@/api/hooks'
 import { dayEndIso, dayStartIso, fmtDateTime, useDebounced } from '@/lib/labels'
 import type { AuditEntry } from '@/lib/types'
@@ -28,9 +29,8 @@ export default function AuditLog() {
   const [targetType, setTargetType] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [page, setPage] = useState(1)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [q, action, actor, targetType, from, to])
+  const [page, setPage] = usePage(JSON.stringify([q, action, actor, targetType, from, to]))
 
   const list = useAudit({ q, action, actor, targetType, from: dayStartIso(from), to: dayEndIso(to), page, pageSize: PAGE_SIZE })
   const facets = list.data?.facets

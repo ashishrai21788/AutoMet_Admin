@@ -1,5 +1,6 @@
 import type { AccountStatus, DocumentStatus, VerificationStatus } from '@/lib/types'
 import { Badge } from './ui'
+import { VERIFICATION_LABEL, tripStatusLabel } from '@/lib/statusLabels'
 
 /** Account status, verification status and document status are different things, so each has its own wording and colour. */
 
@@ -9,13 +10,6 @@ export function AccountBadge({ status }: { status: AccountStatus }) {
   return <Badge kind={kind}>{label}</Badge>
 }
 
-export const VERIFICATION_LABEL: Record<VerificationStatus, string> = {
-  INCOMPLETE: 'Incomplete',
-  PENDING_REVIEW: 'Pending review',
-  APPROVED: 'Approved',
-  REJECTED: 'Rejected',
-  EXPIRED: 'Expired',
-}
 
 export function VerificationBadge({ status }: { status: VerificationStatus }) {
   const kind = status === 'APPROVED' ? 'ok' : status === 'REJECTED' || status === 'EXPIRED' ? 'bad' : status === 'PENDING_REVIEW' ? 'warn' : 'neutral'
@@ -32,12 +26,6 @@ export function EligibleBadge({ eligible }: { eligible: boolean }) {
   return <Badge kind={eligible ? 'ok' : 'neutral'}>{eligible ? 'Eligible for rides' : 'Not eligible'}</Badge>
 }
 
-const TRIP_LABEL: Record<string, string> = {
-  REQUESTED: 'Searching', ACCEPTED: 'Driver assigned', DRIVER_ON_THE_WAY: 'Driver on the way', ARRIVED: 'Driver arrived', ON_GOING: 'In progress',
-  COMPLETED: 'Completed', REJECTED: 'Declined', REJECTED_WITH_REASON: 'Declined', NO_RESPONSE: 'No response',
-  CANCELLED_BY_USER: 'Cancelled by rider', CANCELLED_BY_USER_AFTER_ACCEPTANCE: 'Cancelled by rider', CANCELLED_BY_DRIVER: 'Cancelled by driver',
-}
-export const tripStatusLabel = (s: string) => TRIP_LABEL[s] ?? s
 
 export function TripStatusBadge({ status, cancelledBy }: { status: string; cancelledBy?: string | null }) {
   const kind = status === 'COMPLETED' ? 'ok' : status.startsWith('CANCELLED') || status.startsWith('REJECTED') || status === 'NO_RESPONSE' ? 'bad'

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { usePage } from '@/lib/usePage'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { platform } from '@/api'
 import { dayEndIso, dayStartIso, fmtDateTime, useDebounced } from '@/lib/labels'
@@ -16,9 +17,8 @@ export default function PlatformAudit() {
   const [action, setAction] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [page, setPage] = useState(1)
   const q = useDebounced(search.trim())
-  useEffect(() => setPage(1), [q, action, from, to])
+  const [page, setPage] = usePage(JSON.stringify([q, action, from, to]))
   const params = { q, action, from: dayStartIso(from), to: dayEndIso(to), page, pageSize: PAGE_SIZE }
   const list = useQuery({ queryKey: ['platform-audit', params], queryFn: () => platform.audit(params), placeholderData: keepPreviousData })
   const filtered = !!(q || action || from || to)

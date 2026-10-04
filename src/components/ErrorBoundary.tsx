@@ -5,16 +5,17 @@ import { Button, Card } from './ui'
  * Catches an unexpected error in a page so one broken screen shows a message and a way back instead of a blank window.
  * Pass a different `resetKey` (the page address) so moving to another page clears the error.
  */
-export default class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: string }, { failed: boolean }> {
-  state = { failed: false }
+export default class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: string }, { failed: boolean; key?: string }> {
+  state: { failed: boolean; key?: string } = { failed: false, key: this.props.resetKey }
 
   static getDerivedStateFromError() { return { failed: true } }
 
-  componentDidCatch(error: Error, info: ErrorInfo) { console.error('Screen error:', error, info.componentStack) }
-
-  componentDidUpdate(prev: { resetKey?: string }) {
-    if (this.state.failed && prev.resetKey !== this.props.resetKey) this.setState({ failed: false })
+  // moving to another page clears a previous error
+  static getDerivedStateFromProps(props: { resetKey?: string }, state: { failed: boolean; key?: string }) {
+    return props.resetKey !== state.key ? { failed: false, key: props.resetKey } : null
   }
+
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('Screen error:', error, info.componentStack) }
 
   render() {
     if (!this.state.failed) return this.props.children

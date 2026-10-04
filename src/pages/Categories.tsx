@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Bike, Bus, Car, CarFront, Crown, Plus, Truck, TramFront, Zap } from 'lucide-react'
 import { api } from '@/api'
@@ -117,16 +117,17 @@ export default function Categories() {
   const overview = useOverview()
   const categories = useCategories()
   const regions = useRegions()
-  const [modal, setModal] = useState<Category | 'new' | null>(null)
+  // undefined = not chosen yet: a "?new=1" link from the dashboard opens the new-category dialog
+  const [chosen, setModal] = useState<Category | 'new' | null | undefined>(undefined)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const toggle = useBusinessMutation((c: Category) => api.business.updateCategory(c.id, { active: !c.active }), { success: (c) => `${c.name} is now ${c.active ? 'active' : 'inactive'}` })
 
   const regionList = regions.data ?? []
   const hasRegions = regionList.some((r) => r.active)
-  useEffect(() => {
-    if (params.get('new') === '1' && canEdit && regions.data) { setModal('new'); setParams({}, { replace: true }) }
-  }, [params, canEdit, regions.data, setParams])
+  const fromLink = params.get('new') === '1' && canEdit && !!regions.data
+  const modal = chosen === undefined ? (fromLink ? 'new' : null) : chosen
+  const closeModal = () => { setModal(null); if (fromLink) setParams({}, { replace: true }) }
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -190,7 +191,7 @@ export default function Categories() {
         )}
       </Card>
 
-      {modal && <CategoryModal category={modal === 'new' ? null : modal} regions={regionList} onClose={() => setModal(null)} />}
+      {modal && <CategoryModal category={modal === 'new' ? null : modal} regions={regionList} onClose={closeModal} />}
     </>
   )
 }

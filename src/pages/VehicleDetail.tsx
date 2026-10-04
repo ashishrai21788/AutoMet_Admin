@@ -136,7 +136,7 @@ export default function VehicleDetail() {
             <Dl rows={[['Registration number', v.registrationNumber], ['Make and model', `${v.make} ${v.model}`], ['Year', v.year ? String(v.year) : ''], ['Colour', v.colour], ['Category', v.categoryName], ['Passengers', String(v.passengerCapacity)], ['Luggage', v.luggageCapacity != null ? String(v.luggageCapacity) : '']]} />
           </Card>
           <Card className="p-5"><h2 className="mb-3 font-semibold">Operation</h2>
-            <Dl rows={[['Operating region', v.operatingRegionId ? regionLabel(regionById.get(v.operatingRegionId)) : 'Any region'], ['Status', <AccountBadge status={v.status} />], ['Document verification', <VerificationBadge status={v.verificationStatus} />], ['Assigned driver', v.driver ? <Link className="hover:underline" to={`/drivers/${v.driver.id}`}>{v.driver.name}</Link> : 'Not assigned'], ['Added', fmtDate(v.createdAt)]]} />
+            <Dl rows={[['Operating region', v.operatingRegionId ? regionLabel(regionById.get(v.operatingRegionId)) : 'Any region'], ['Status', <AccountBadge key="v" status={v.status} />], ['Document verification', <VerificationBadge key="v" status={v.verificationStatus} />], ['Assigned driver', v.driver ? <Link key="v" className="hover:underline" to={`/drivers/${v.driver.id}`}>{v.driver.name}</Link> : 'Not assigned'], ['Added', fmtDate(v.createdAt)]]} />
             <p className="mt-3 text-xs text-muted">A vehicle is ready for use when it is active and its documents are approved and unexpired. The driver also has to be eligible.</p>
           </Card>
         </div>
