@@ -125,7 +125,7 @@ export default function Reports() {
                 <div className="flex justify-between py-2"><dt className="text-muted">Fares of completed trips</dt><dd className="tabular-nums">{fmtMoney(d.finance.grossFares, d.currency)}</dd></div>
                 <div className="flex justify-between py-2"><dt className="text-muted">of which booking fees</dt><dd className="tabular-nums">{fmtMoney(d.finance.bookingFees, d.currency)}</dd></div>
                 <div className="flex justify-between py-2"><dt className="text-muted">of which taxes</dt><dd className="tabular-nums">{fmtMoney(d.finance.taxes, d.currency)}</dd></div>
-                {d.finance.byPaymentMode.map((p) => <div key={p.mode} className="flex justify-between py-2"><dt className="text-muted">Paid by {p.mode.toLowerCase()} ({p.trips} trip{p.trips === 1 ? '' : 's'})</dt><dd className="tabular-nums">{fmtMoney(p.fares, d.currency)}</dd></div>)}
+                {d.finance.byPaymentMode.map((p) => <div key={p.mode} className="flex justify-between py-2"><dt className="text-muted">{p.mode === 'UNKNOWN' ? 'Payment method not recorded' : `Paid by ${p.mode.toLowerCase()}`} ({p.trips} trip{p.trips === 1 ? '' : 's'})</dt><dd className="tabular-nums">{fmtMoney(p.fares, d.currency)}</dd></div>)}
               </dl>
               {d.finance.estimatedFares > 0 && <p className="mt-2 text-xs text-muted">{d.finance.estimatedFares} of {d.finance.completedTrips} fares are the estimate shown when the ride was requested; final fares are not recorded yet.</p>}
               <p className="mt-2 text-xs text-muted">Not recorded by the platform yet, so not shown: {d.finance.unavailable.join(', ')}.</p>
