@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
-import { api } from '@/api'
+import { api, API_CONFIGURED, NOT_CONFIGURED_MESSAGE } from '@/api'
 import { useAuth } from '@/store/auth'
-import { Button, Card, TextField } from '@/components/ui'
+import { Alert, Button, Card, TextField } from '@/components/ui'
 
 export default function Login() {
   const { session, setSession } = useAuth()
@@ -41,11 +41,12 @@ export default function Login() {
             <p className="text-sm text-muted">Sign in to your dashboard</p>
           </div>
         </div>
+        {!API_CONFIGURED && <div className="mb-4"><Alert kind="error">{NOT_CONFIGURED_MESSAGE}</Alert></div>}
         <form onSubmit={submit} className="space-y-4">
           <TextField label="Email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
           <TextField label="Password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-          <Button type="submit" className="w-full" loading={busy}>{busy ? 'Signing in…' : 'Sign in'}</Button>
+          <Button type="submit" className="w-full" loading={busy} disabled={!API_CONFIGURED}>{busy ? 'Signing in…' : 'Sign in'}</Button>
         </form>
       </Card>
     </div>

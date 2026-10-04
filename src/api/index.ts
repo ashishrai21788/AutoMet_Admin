@@ -4,7 +4,12 @@ import type {
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
-const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/$/, '')
+
+/** False when the build was made without VITE_API_BASE_URL; every request would then go to the wrong server. */
+export const API_CONFIGURED = BASE !== ''
+export const NOT_CONFIGURED_MESSAGE =
+  'This dashboard is not connected to a server: the API address (VITE_API_BASE_URL) was not set when it was built. Set it in the hosting settings and redeploy.'
 
 /** An API failure with the server's message and, for validation errors, a message per field. */
 export class ApiError extends Error {
@@ -26,6 +31,7 @@ function currentAppId(): string | null {
 }
 
 async function request<T>(path: string, init: RequestInit & { business?: boolean } = {}): Promise<T> {
+  if (!API_CONFIGURED) throw new ApiError(NOT_CONFIGURED_MESSAGE, 0)
   const { business, ...fetchInit } = init
   const token = useAuth.getState().session?.token
   const appId = business ? currentAppId() : null
