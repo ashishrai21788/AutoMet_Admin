@@ -11,6 +11,8 @@ import Platform from '@/pages/Platform'
 import PlatformAudit from '@/pages/PlatformAudit'
 import BusinessDetail from '@/pages/BusinessDetail'
 import Plans from '@/pages/Plans'
+import ForgotPassword from '@/pages/ForgotPassword'
+import ResetPassword from '@/pages/ResetPassword'
 import Revenue from '@/pages/Revenue'
 import PlatformTeam from '@/pages/PlatformTeam'
 import PlatformSettings from '@/pages/PlatformSettings'
@@ -52,6 +54,9 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login kind="business" />} />
             <Route path="/platform/login" element={<Login kind="platform" />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/platform/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route element={<RequireAuth />}>
               <Route element={<AppLayout />}>
                 <Route path="account" element={<Account />} />

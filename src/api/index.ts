@@ -128,6 +128,8 @@ const q = (appId: string | null) => (appId ? `?tenantId=${encodeURIComponent(app
 export const api = {
   login: (email: string, password: string) =>
     request<Session>('/api/admin/auth/login', { method: 'POST', body: json({ email, password }) }),
+  forgotPassword: (email: string) => request<{ message: string }>('/api/admin/auth/forgot-password', { method: 'POST', body: json({ email }) }),
+  resetPassword: (token: string, password: string) => request<{ role: 'super_admin' | 'client_admin' | 'operations' | 'support' | 'finance' }>('/api/admin/auth/reset-password', { method: 'POST', body: json({ token, password }) }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<Session>('/api/admin/auth/change-password', { method: 'POST', body: json({ currentPassword, newPassword }) }),
 

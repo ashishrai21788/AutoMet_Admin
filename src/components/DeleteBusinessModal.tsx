@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '@/api'
+import ExportButton from '@/components/ExportButton'
 import type { Business } from '@/lib/types'
 import Modal from '@/components/Modal'
 import { refreshPlatform } from '@/lib/billing'
@@ -29,6 +30,10 @@ export default function DeleteBusinessModal({ business, onClose }: { business: B
       <form id="delete-business" noValidate className="space-y-4" onSubmit={(e: FormEvent) => { e.preventDefault(); if (match && !remove.isPending) remove.mutate() }}>
         {!suspended && <Alert kind="warn">{business.name} is {business.status}. Suspend it first (its admins are signed out and its apps stop), then delete it.</Alert>}
         <Alert kind="error">This permanently deletes {business.name} and everything it owns: its drivers, riders, trips, vehicles, documents, support reports, invoices, regions, fare rules and admin accounts. It cannot be undone, and the business's riders and drivers will no longer be able to use its apps.</Alert>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <ExportButton path={`/api/admin/tenants/${business.appId}/export`} fileName={`${business.appId}-export.json`} label="Download a copy first" />
+          <span className="text-xs text-muted">A JSON file of its data, without passwords. Uploaded document files are deleted with the business and are not in it.</span>
+        </div>
         <TextField label={`Type ${business.appId} to confirm`} value={typed} disabled={!suspended} onChange={(e) => { setTyped(e.target.value); remove.reset() }} autoComplete="off" />
         {remove.isError && <Alert kind="error">{remove.error.message}</Alert>}
       </form>
