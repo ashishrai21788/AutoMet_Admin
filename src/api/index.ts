@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AssignSubscriptionInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -261,7 +261,10 @@ export const platform = {
   createPlan: (input: PlanInput) => request<Plan>('/api/admin/platform/plans', { method: 'POST', body: json(input) }),
   updatePlan: (id: string, input: Partial<PlanInput>) => request<Plan>(`/api/admin/platform/plans/${id}`, { method: 'PATCH', body: json(input) }),
   settings: () => request<PlatformSettings>('/api/admin/platform/settings'),
-  saveSettings: (input: Partial<Omit<PlatformSettings, 'currency'>>) => request<PlatformSettings>('/api/admin/platform/settings', { method: 'PUT', body: json(input) }),
+  saveSettings: (input: PlatformSettingsInput) => request<PlatformSettings>('/api/admin/platform/settings', { method: 'PUT', body: json(input) }),
+  runBilling: () => request<BillingRunResult>('/api/admin/platform/billing/run', { method: 'POST' }),
+  saveBillingDetails: (appId: string, input: Partial<BillingDetails>) => request<{ details: BillingDetails }>(`/api/admin/tenants/${appId}/billing-details`, { method: 'PUT', body: json(input) }),
+  emailInvoice: (id: string, to?: string) => request<Invoice>(`/api/admin/invoices/${id}/send`, { method: 'POST', body: json(to ? { to } : {}) }),
   billing: (appId: string) => request<BusinessBilling>(`/api/admin/tenants/${appId}/billing`),
   assignSubscription: (appId: string, input: AssignSubscriptionInput) =>
     request<{ subscription: Subscription; setupInvoice: Invoice | null }>(`/api/admin/tenants/${appId}/subscription`, { method: 'PUT', body: json(input) }),

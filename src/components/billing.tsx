@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ApiError, platform } from '@/api'
+import { ApiError, downloadFile, platform } from '@/api'
 import { fmtDate, fmtMoney } from '@/lib/labels'
 import { CYCLE_LABEL, METHOD_LABEL, TYPE_LABEL, refreshPlatform } from '@/lib/billing'
-import type { AssignSubscriptionInput, Invoice, PaymentMethod, Plan, Subscription } from '@/lib/types'
+import type { AssignSubscriptionInput, BillingDetails, Invoice, PaymentMethod, Plan, Subscription } from '@/lib/types'
+import { GST_STATES, isGstin, stateOfGstin } from '@/lib/gstStates'
 import DataTable, { type Column, type ServerPaging } from '@/components/DataTable'
 import Modal from '@/components/Modal'
 import ReasonModal from '@/components/ReasonModal'
@@ -44,7 +45,7 @@ function PayModal({ invoice, onClose }: { invoice: Invoice; onClose: () => void 
     <Modal title={`Record payment for ${invoice.number}`} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" form="pay-form" loading={pay.isPending}>Mark as paid</Button></>}>
       <form id="pay-form" noValidate className="space-y-4" onSubmit={(e: FormEvent) => { e.preventDefault(); pay.mutate() }}>
-        <p className="text-sm">{invoice.businessName} · <strong>{fmtMoney(invoice.amount, invoice.currency)}</strong>. Payments are recorded by hand; AutoMet does not collect money through this screen.</p>
+        <p className="text-sm">{invoice.businessName} · <strong>{fmtMoney(invoice.total, invoice.currency)}</strong>{invoice.taxAmount > 0 ? ` (${fmtMoney(invoice.amount, invoice.currency)} + ${fmtMoney(invoice.taxAmount, invoice.currency)} GST)` : ''}. Payments are recorded by hand; AutoMet does not collect money through this screen.</p>
         <SelectField label="Payment method" value={form.paymentMethod} onChange={set('paymentMethod')} error={fe.paymentMethod}>
           <option value="">Choose…</option>
           {(Object.keys(METHOD_LABEL) as PaymentMethod[]).map((m) => <option key={m} value={m}>{METHOD_LABEL[m]}</option>)}
@@ -59,7 +60,7 @@ function PayModal({ invoice, onClose }: { invoice: Invoice; onClose: () => void 
 function RefundModal({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
   const qc = useQueryClient()
   const toast = useToast()
-  const left = Math.round((invoice.amount - invoice.refundedAmount) * 100) / 100
+  const left = Math.round((invoice.total - invoice.refundedAmount) * 100) / 100
   const [amount, setAmount] = useState(String(left))
   const [reason, setReason] = useState('')
   const refund = useMutation({
@@ -72,7 +73,7 @@ function RefundModal({ invoice, onClose }: { invoice: Invoice; onClose: () => vo
     <Modal title={`Refund on ${invoice.number}`} onClose={onClose}
       footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" form="refund-form" variant="danger" loading={refund.isPending}>Record refund</Button></>}>
       <form id="refund-form" noValidate className="space-y-4" onSubmit={(e: FormEvent) => { e.preventDefault(); refund.mutate() }}>
-        <p className="text-sm">{invoice.businessName} paid {fmtMoney(invoice.amount, invoice.currency)}{invoice.refundedAmount > 0 ? `, of which ${fmtMoney(invoice.refundedAmount, invoice.currency)} has been refunded` : ''}. You can refund up to <strong>{fmtMoney(left, invoice.currency)}</strong>. This records a refund you have made; it does not send money.</p>
+        <p className="text-sm">{invoice.businessName} paid {fmtMoney(invoice.total, invoice.currency)}{invoice.refundedAmount > 0 ? `, of which ${fmtMoney(invoice.refundedAmount, invoice.currency)} has been refunded` : ''}. You can refund up to <strong>{fmtMoney(left, invoice.currency)}</strong>. This records a refund you have made; it does not send money.</p>
         <TextField label="Amount" type="number" min="0" step="0.01" value={amount} onChange={(e) => { setAmount(e.target.value); refund.reset() }} error={fe.amount} />
         <Field label="Reason (required)" error={fe.reason}>{(p) => <Textarea {...p} rows={3} maxLength={300} value={reason} onChange={(e) => { setReason(e.target.value); refund.reset() }} />}</Field>
       </form>
@@ -81,13 +82,35 @@ function RefundModal({ invoice, onClose }: { invoice: Invoice; onClose: () => vo
 }
 
 /** Pay, void or refund an invoice. Which actions show depends on the invoice's state. */
+/** One small link per refund: its credit note, as a PDF. */
+function CreditNotes({ invoice }: { invoice: Invoice }) {
+  const toast = useToast()
+  const notes = invoice.refunds.filter((r) => r.number)
+  if (!notes.length) return null
+  return (
+    <div className="mt-0.5 flex flex-wrap justify-end gap-x-2">
+      {notes.map((r) => (
+        <button key={r.number} type="button" className="text-xs underline" title={`Credit note for ${fmtMoney(r.amount, invoice.currency)}`}
+          onClick={async () => { try { await downloadFile(`/api/admin/invoices/${invoice.id}/credit-notes/${r.number}/pdf`, `${r.number}.pdf`) } catch (e) { toast.error(e instanceof Error ? e.message : 'The download failed') } }}>{r.number}</button>
+      ))}
+    </div>
+  )
+}
+
 export function InvoiceActions({ invoice }: { invoice: Invoice }) {
   const qc = useQueryClient()
   const [mode, setMode] = useState<'pay' | 'void' | 'refund' | null>(null)
-  const canRefund = invoice.status === 'paid' && invoice.refundedAmount < invoice.amount
-  if (invoice.status === 'void' || (invoice.status === 'paid' && !canRefund)) return null
+  const toast = useToast()
+  const [emailing, setEmailing] = useState(false)
+  const canRefund = invoice.status === 'paid' && invoice.refundedAmount < invoice.total
+  async function pdf() { try { await downloadFile(`/api/admin/invoices/${invoice.id}/pdf`, `${invoice.number}.pdf`) } catch (e) { toast.error(e instanceof Error ? e.message : 'The download failed') } }
+  async function email() {
+    setEmailing(true)
+    try { await platform.emailInvoice(invoice.id); await refreshPlatform(qc); toast.success(`${invoice.number} was emailed`) } catch (e) { toast.error(e instanceof Error ? e.message : 'The email could not be sent') } finally { setEmailing(false) }
+  }
   return (
-    <div className="flex justify-end gap-1">
+    <div className="flex flex-wrap justify-end gap-1">
+      {invoice.status !== 'void' && <><Button variant="ghost" onClick={pdf}>PDF</Button><Button variant="ghost" loading={emailing} onClick={email} title={invoice.emailedAt ? `Last emailed ${fmtDate(invoice.emailedAt)}` : undefined}>{invoice.emailedAt ? 'Email again' : 'Email'}</Button></>}
       {invoice.status === 'issued' && <><Button variant="ghost" onClick={() => setMode('pay')}>Record payment</Button><Button variant="ghost" onClick={() => setMode('void')}>Void</Button></>}
       {canRefund && <Button variant="ghost" onClick={() => setMode('refund')}>Refund</Button>}
       {mode === 'pay' && <PayModal invoice={invoice} onClose={() => setMode(null)} />}
@@ -108,9 +131,9 @@ function invoiceColumns({ showBusiness }: { showBusiness: boolean }): Column<Inv
   if (showBusiness) cols.push({ header: 'Business', cell: (i) => <span className="text-sm">{i.businessName}</span> })
   cols.push(
     { header: 'Period / for', cell: (i) => <span className="text-xs text-muted">{i.periodStart && i.periodEnd ? `${fmtDate(i.periodStart)} – ${fmtDate(i.periodEnd)}` : i.description}</span> },
-    { header: 'Amount', className: 'text-right', cell: (i) => <div className="text-sm tabular-nums">{fmtMoney(i.amount, i.currency)}{i.refundedAmount > 0 && <div className="text-xs text-danger">− {fmtMoney(i.refundedAmount, i.currency)} refunded</div>}</div> },
+    { header: 'Amount', className: 'text-right', cell: (i) => <div className="text-sm tabular-nums">{fmtMoney(i.total, i.currency)}{i.taxAmount > 0 && <div className="text-xs text-muted">{fmtMoney(i.amount, i.currency)} + {fmtMoney(i.taxAmount, i.currency)} GST</div>}{i.refundedAmount > 0 && <div className="text-xs text-danger">− {fmtMoney(i.refundedAmount, i.currency)} refunded</div>}<CreditNotes invoice={i} /></div> },
     { header: 'Due', cell: (i) => <span className="text-xs">{fmtDate(i.dueDate)}</span> },
-    { header: 'Status', cell: (i) => <div><InvoiceBadge i={i} />{i.status === 'paid' && <div className="mt-1 text-xs text-muted">{fmtDate(i.paidAt)}{i.paymentMethod ? ` · ${METHOD_LABEL[i.paymentMethod]}` : ''}</div>}</div> },
+    { header: 'Status', cell: (i) => <div><InvoiceBadge i={i} />{i.lapsedAt && i.status === 'issued' && <div className="mt-1 text-xs text-danger">Lapsed</div>}{i.status === 'paid' && <div className="mt-1 text-xs text-muted">{fmtDate(i.paidAt)}{i.paymentMethod ? ` · ${METHOD_LABEL[i.paymentMethod]}` : ''}</div>}</div> },
     { header: 'Actions', hideLabel: true, className: 'text-right', cell: (i) => <InvoiceActions invoice={i} /> },
   )
   return cols
@@ -118,6 +141,42 @@ function invoiceColumns({ showBusiness }: { showBusiness: boolean }): Column<Inv
 
 export function InvoiceTable({ rows, showBusiness, paging, loading }: { rows: Invoice[]; showBusiness: boolean; paging?: ServerPaging; loading?: boolean }) {
   return <DataTable rows={rows} columns={invoiceColumns({ showBusiness })} rowKey={(i) => i.id} paging={paging} loading={loading} empty={{ title: 'No invoices', text: 'Invoices you issue will appear here.' }} />
+}
+
+// ---------------------------------------------------------------- who is invoiced
+
+/** Legal name, GSTIN, address, state and invoice email of a business. Changing them never alters invoices already issued. */
+export function EditBillingDetailsModal({ appId, businessName, current, onClose }: { appId: string; businessName: string; current: BillingDetails | null; onClose: () => void }) {
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [form, setForm] = useState<BillingDetails>({ legalName: current?.legalName ?? businessName, gstin: current?.gstin ?? '', address: current?.address ?? '', stateCode: current?.stateCode ?? '', email: current?.email ?? '' })
+  const gstinOk = isGstin(form.gstin)
+  const stateFromGstin = gstinOk ? stateOfGstin(form.gstin) : ''
+  const save = useMutation({
+    mutationFn: () => platform.saveBillingDetails(appId, { ...form, gstin: form.gstin.trim().toUpperCase(), stateCode: stateFromGstin || form.stateCode }),
+    onSuccess: async () => { await refreshPlatform(qc); toast.success('Billing details saved'); onClose() },
+    onError: (e) => { if (!(e instanceof ApiError) || !Object.keys(e.fieldErrors).length) toast.error(e.message) },
+  })
+  const fe = save.error instanceof ApiError ? save.error.fieldErrors : {}
+  const set = (k: keyof BillingDetails, v: string) => { setForm({ ...form, [k]: v }); save.reset() }
+  return (
+    <Modal title={`Billing details for ${businessName}`} onClose={onClose}
+      footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" form="billing-details" loading={save.isPending}>Save</Button></>}>
+      <form id="billing-details" noValidate className="space-y-4" onSubmit={(e: FormEvent) => { e.preventDefault(); save.mutate() }}>
+        <p className="text-xs text-muted">Printed on this business's invoices. Invoices already issued keep the details they were issued with.</p>
+        <TextField label="Legal name" value={form.legalName} maxLength={120} onChange={(e) => set('legalName', e.target.value)} error={fe.legalName} />
+        <TextField label="GSTIN (if registered)" value={form.gstin} maxLength={15} autoCapitalize="characters" onChange={(e) => set('gstin', e.target.value.toUpperCase())} error={fe.gstin ?? (form.gstin && !gstinOk ? 'A GSTIN has 15 characters, for example 27AAPFU0939F1ZV' : undefined)} />
+        {stateFromGstin
+          ? <p className="text-xs text-muted">State from the GSTIN: <strong>{GST_STATES[stateFromGstin]}</strong></p>
+          : <SelectField label="State (place of supply)" value={form.stateCode} onChange={(e) => set('stateCode', e.target.value)} error={fe.stateCode} hint="Decides whether CGST and SGST or IGST is charged.">
+            <option value="">Choose a state…</option>
+            {Object.entries(GST_STATES).map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}
+          </SelectField>}
+        <Field label="Address" error={fe.address}>{(p) => <Textarea {...p} rows={3} maxLength={300} value={form.address} onChange={(e) => set('address', e.target.value)} />}</Field>
+        <TextField label="Invoice email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} error={fe.email} hint="Invoices and reminders go here. Empty uses the business's first admin." />
+      </form>
+    </Modal>
+  )
 }
 
 // ---------------------------------------------------------------- subscription actions

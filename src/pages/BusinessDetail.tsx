@@ -8,7 +8,8 @@ import EditBusinessModal from '@/components/EditBusinessModal'
 import DeleteBusinessModal from '@/components/DeleteBusinessModal'
 import { TeamManager } from '@/pages/Team'
 import { CYCLE_LABEL, refreshPlatform } from '@/lib/billing'
-import { AssignPlanModal, InvoiceTable, IssueInvoiceModal, SubscriptionBadge } from '@/components/billing'
+import { AssignPlanModal, EditBillingDetailsModal, InvoiceTable, IssueInvoiceModal, SubscriptionBadge } from '@/components/billing'
+import { GST_STATES } from '@/lib/gstStates'
 import ReasonModal from '@/components/ReasonModal'
 import { useConfirm, useToast } from '@/components/feedback'
 import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, Spinner } from '@/components/ui'
@@ -19,9 +20,10 @@ const statusKind = { active: 'ok', trial: 'warn', suspended: 'bad' } as const
 function BillingPanel({ appId, name }: { appId: string; name: string }) {
   const qc = useQueryClient()
   const toast = useToast()
-  const [modal, setModal] = useState<'assign' | 'invoice' | 'cancel' | null>(null)
+  const [modal, setModal] = useState<'assign' | 'invoice' | 'cancel' | 'details' | null>(null)
   const billing = useQuery({ queryKey: ['platform-billing', appId], queryFn: () => platform.billing(appId) })
   const plans = useQuery({ queryKey: ['platform-plans'], queryFn: platform.plans })
+  const settings = useQuery({ queryKey: ['platform-settings'], queryFn: platform.settings })
   const renew = useMutation({
     mutationFn: (invoice: boolean) => platform.renewSubscription(appId, invoice),
     onSuccess: async (r) => { await refreshPlatform(qc); toast.success(r.invoice ? `Renewed and invoiced (${r.invoice.number})` : 'Subscription renewed') },
@@ -75,8 +77,21 @@ function BillingPanel({ appId, name }: { appId: string; name: string }) {
           <Row label="Outstanding">{fmtMoney(b.totals.outstanding, cur)}</Row>
         </dl>
       </div>
+      <div className="border-t border-line px-5 py-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold">Invoiced as</h3><Button variant="ghost" onClick={() => setModal('details')}>Edit billing details</Button></div>
+        {b.details && (b.details.legalName || b.details.stateCode) ? (
+          <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+            <div className="flex justify-between gap-3"><dt className="text-muted">Legal name</dt><dd className="text-right">{b.details.legalName || '—'}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-muted">GSTIN</dt><dd className="text-right font-mono text-xs">{b.details.gstin || 'Not registered'}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-muted">State</dt><dd className="text-right">{GST_STATES[b.details.stateCode] ?? '—'}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-muted">Invoice email</dt><dd className="text-right">{b.details.email || 'Its first admin'}</dd></div>
+          </dl>
+        ) : <p className="text-sm text-muted">Not set yet.{settings.data?.gstEnabled ? ' GST invoices need the business\'s state, so add its billing details before invoicing.' : ''}</p>}
+        <p className="mt-2 text-xs text-muted">GST collected so far on its invoices: {fmtMoney(b.totals.gst, cur)}.</p>
+      </div>
       <div className="border-t border-line"><InvoiceTable rows={b.invoices} showBusiness={false} /></div>
 
+      {modal === 'details' && <EditBillingDetailsModal appId={appId} businessName={name} current={b.details} onClose={() => setModal(null)} />}
       {modal === 'assign' && <AssignPlanModal appId={appId} businessName={name} plans={plans.data ?? []} current={sub} onClose={() => setModal(null)} />}
       {modal === 'invoice' && <IssueInvoiceModal appId={appId} subscription={sub} onClose={() => setModal(null)} />}
       {modal === 'cancel' && (

@@ -10,7 +10,7 @@ import SecretNotice from '@/components/SecretNotice'
 import Modal from '@/components/Modal'
 import DataTable, { SearchInput, type Column } from '@/components/DataTable'
 import { useConfirm, useToast } from '@/components/feedback'
-import { Badge, Button, Card, ErrorState, PageHeader, SelectField, Spinner, TextField } from '@/components/ui'
+import { Badge, Button, Card, ErrorState, PageHeader, Spinner, TextField } from '@/components/ui'
 
 const statusKind = { active: 'ok', trial: 'warn', suspended: 'bad' } as const
 const empty: NewBusinessInput = { name: '', appName: '', packageName: '', city: '', plan: 'trial', brandColor: '#f5a300', adminName: '', adminEmail: '' }
@@ -142,9 +142,7 @@ export default function Businesses() {
             <TextField label="App name (shown to riders)" required value={form.appName} onChange={set('appName')} error={shown('appName')} />
             <TextField label="Android package name" required placeholder="com.company.rider" value={form.packageName} onChange={set('packageName')} error={shown('packageName')} />
             <TextField label="Head-office city (optional)" value={form.city} onChange={set('city')} />
-            <SelectField label="Plan" value={form.plan} onChange={set('plan')}>
-              <option value="trial">Trial</option><option value="standard">Standard</option><option value="enterprise">Enterprise</option>
-            </SelectField>
+            <p className="text-xs text-muted sm:col-span-2">New businesses start on a trial. Choose a plan for it from its page.</p>
             <TextField label="Brand colour" type="color" value={form.brandColor} onChange={set('brandColor')} error={shown('brandColor')} className="[&_input]:h-10 [&_input]:p-1" />
             <TextField label="Business admin name" required value={form.adminName} onChange={set('adminName')} error={shown('adminName')} />
             <TextField label="Business admin email" required type="email" value={form.adminEmail} onChange={set('adminEmail')} error={shown('adminEmail')} />

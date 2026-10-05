@@ -6,43 +6,43 @@ import { RequireAuth, RequirePermission } from '@/components/guards'
 import BusinessGate from '@/components/BusinessGate'
 import AppLayout from '@/layouts/AppLayout'
 import Login from '@/pages/Login'
-import Businesses from '@/pages/Businesses'
-import Platform from '@/pages/Platform'
-import PlatformAudit from '@/pages/PlatformAudit'
-import BusinessDetail from '@/pages/BusinessDetail'
-import Plans from '@/pages/Plans'
-import ForgotPassword from '@/pages/ForgotPassword'
-import ResetPassword from '@/pages/ResetPassword'
-import Revenue from '@/pages/Revenue'
-import PlatformTeam from '@/pages/PlatformTeam'
-import PlatformSettings from '@/pages/PlatformSettings'
-import Dashboard from '@/pages/Dashboard'
-import Regions from '@/pages/Regions'
-import Categories from '@/pages/Categories'
-import Pricing from '@/pages/Pricing'
-import RideSettings from '@/pages/RideSettings'
-import BusinessSettings from '@/pages/BusinessSettings'
-import Team from '@/pages/Team'
-import Account from '@/pages/Account'
-import Drivers from '@/pages/Drivers'
-import DriverNew from '@/pages/DriverNew'
-import DriverDetail from '@/pages/DriverDetail'
-import Vehicles from '@/pages/Vehicles'
-import VehicleDetail from '@/pages/VehicleDetail'
-import Verification from '@/pages/Verification'
-import Alerts from '@/pages/Alerts'
+const Businesses = lazy(() => import('@/pages/Businesses'))
+const Platform = lazy(() => import('@/pages/Platform'))
+const PlatformAudit = lazy(() => import('@/pages/PlatformAudit'))
+const BusinessDetail = lazy(() => import('@/pages/BusinessDetail'))
+const Plans = lazy(() => import('@/pages/Plans'))
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'))
+const Revenue = lazy(() => import('@/pages/Revenue'))
+const PlatformTeam = lazy(() => import('@/pages/PlatformTeam'))
+const PlatformSettings = lazy(() => import('@/pages/PlatformSettings'))
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const Regions = lazy(() => import('@/pages/Regions'))
+const Categories = lazy(() => import('@/pages/Categories'))
+const Pricing = lazy(() => import('@/pages/Pricing'))
+const RideSettings = lazy(() => import('@/pages/RideSettings'))
+const BusinessSettings = lazy(() => import('@/pages/BusinessSettings'))
+const Team = lazy(() => import('@/pages/Team'))
+const Account = lazy(() => import('@/pages/Account'))
+const Drivers = lazy(() => import('@/pages/Drivers'))
+const DriverNew = lazy(() => import('@/pages/DriverNew'))
+const DriverDetail = lazy(() => import('@/pages/DriverDetail'))
+const Vehicles = lazy(() => import('@/pages/Vehicles'))
+const VehicleDetail = lazy(() => import('@/pages/VehicleDetail'))
+const Verification = lazy(() => import('@/pages/Verification'))
+const Alerts = lazy(() => import('@/pages/Alerts'))
 import { Spinner } from '@/components/ui'
 
 // the map library is large, so the page loads only when it is opened
+const AuditLog = lazy(() => import('@/pages/AuditLog'))
+const Trips = lazy(() => import('@/pages/Trips'))
+const Reports = lazy(() => import('@/pages/Reports'))
+const Support = lazy(() => import('@/pages/Support'))
 const LiveMap = lazy(() => import('@/pages/LiveMap'))
-import AuditLog from '@/pages/AuditLog'
-import Trips from '@/pages/Trips'
-import Reports from '@/pages/Reports'
-import Support from '@/pages/Support'
-import NotFound from '@/pages/NotFound'
-import TripDetail from '@/pages/TripDetail'
-import Riders from '@/pages/Riders'
-import RiderDetail from '@/pages/RiderDetail'
+const NotFound = lazy(() => import('@/pages/NotFound'))
+const TripDetail = lazy(() => import('@/pages/TripDetail'))
+const Riders = lazy(() => import('@/pages/Riders'))
+const RiderDetail = lazy(() => import('@/pages/RiderDetail'))
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } })
 
@@ -51,6 +51,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <FeedbackProvider>
         <BrowserRouter>
+          <Suspense fallback={<div className="p-6"><Spinner /></div>}>
           <Routes>
             <Route path="/login" element={<Login kind="business" />} />
             <Route path="/platform/login" element={<Login kind="platform" />} />
@@ -84,7 +85,7 @@ export default function App() {
                   </Route>
                   <Route element={<RequirePermission permission="dashboard.view" />}>
                     <Route path="alerts" element={<Alerts />} />
-                    <Route path="live-map" element={<Suspense fallback={<Spinner />}><LiveMap /></Suspense>} />
+                    <Route path="live-map" element={<LiveMap />} />
                   </Route>
                   <Route element={<RequirePermission permission="trips.view" />}>
                     <Route path="trips" element={<Trips />} />
@@ -126,6 +127,7 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </FeedbackProvider>
     </QueryClientProvider>

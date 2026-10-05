@@ -89,15 +89,15 @@ export default function Revenue() {
 
       <h2 className="mb-2 mt-6 text-sm font-semibold">Money in the selected period</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Billed" value={money(s.billed)} hint="Invoices issued, excluding void" />
-        <Stat label="Collected" value={money(s.collected)} hint="Payments received" />
+        <Stat label="Billed" value={money(s.billed)} hint={`Before GST, excluding void. GST charged: ${money(s.gstCharged)}`} />
+        <Stat label="Collected" value={money(s.collected)} hint={`Before GST. GST received: ${money(s.gstCollected)}`} />
         <Stat label="Refunded" value={money(s.refunded)} />
         <Stat label="Net collected" value={money(s.netCollected)} hint="Collected minus refunded" />
       </div>
 
       <h2 className="mb-2 mt-6 text-sm font-semibold">Receivables (today)</h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Stat label="Outstanding" value={money(s.outstanding)} hint={`${s.counts.outstandingInvoices} unpaid invoice${s.counts.outstandingInvoices === 1 ? '' : 's'}`} />
+        <Stat label="Outstanding" value={money(s.outstanding)} hint={`${s.counts.outstandingInvoices} unpaid invoice${s.counts.outstandingInvoices === 1 ? '' : 's'}, GST included`} />
         <Stat label="Overdue" value={money(s.overdue)} hint={`${s.counts.overdueInvoices} past the due date`} />
       </div>
 

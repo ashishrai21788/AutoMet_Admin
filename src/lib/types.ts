@@ -686,7 +686,7 @@ export type PaymentMethod = 'bank_transfer' | 'upi' | 'card' | 'cash' | 'other'
 export type SubscriptionStatus = 'trialing' | 'active' | 'cancelled'
 export type Cycle = 'monthly' | 'yearly'
 
-export interface Refund { at: string; amount: number; reason: string; by: string }
+export interface Refund { at: string; number: string | null; amount: number; exTax: number; tax: number; reason: string; by: string }
 
 export interface Invoice {
   id: string
@@ -697,7 +697,19 @@ export interface Invoice {
   description: string
   periodStart: string | null
   periodEnd: string | null
+  /** taxable value, before GST */
   amount: number
+  taxRate: number
+  taxAmount: number
+  cgst: number
+  sgst: number
+  igst: number
+  /** what the business pays: amount plus GST */
+  total: number
+  sac: string
+  buyerGstin: string
+  emailedAt: string | null
+  lapsedAt: string | null
   currency: string
   status: InvoiceStatus
   overdue: boolean
@@ -748,14 +760,29 @@ export interface Subscription {
 
 export interface BusinessBilling {
   subscription: Subscription | null
+  details: BillingDetails | null
   businessStatus: Business['status']
-  totals: { billed: number; collected: number; refunded: number; outstanding: number }
+  totals: { billed: number; collected: number; refunded: number; outstanding: number; gst: number }
   invoices: Invoice[]
 }
 
 export interface AssignSubscriptionInput { planId: string; price?: number | string; startDate?: string; trial?: boolean; trialDays?: number | string; notes?: string; issueSetupInvoice?: boolean }
 
-export interface PlatformSettings { companyName: string; billingEmail: string; invoiceDueDays: number; defaultTrialDays: number; invoiceNotes: string; currency: string }
+export type LapseAction = 'none' | 'cancel' | 'suspend'
+
+export interface PlatformSettings {
+  companyName: string; billingEmail: string; invoiceDueDays: number; defaultTrialDays: number; invoiceNotes: string; currency: string
+  legalName: string; gstin: string; address: string; stateCode: string; sac: string; gstRate: number
+  reminderOffsets: number[]; graceDays: number; lapseAction: LapseAction; lastRunAt: string | null
+  emailConfigured: boolean; gstEnabled: boolean
+}
+
+export type PlatformSettingsInput = Partial<Omit<PlatformSettings, 'currency' | 'stateCode' | 'lastRunAt' | 'emailConfigured' | 'gstEnabled' | 'reminderOffsets'>> & { reminderOffsets?: string }
+
+/** Who a business is invoiced as. A GSTIN fixes the state; without one the state is chosen. */
+export interface BillingDetails { legalName: string; gstin: string; address: string; stateCode: string; email: string }
+
+export interface BillingRunResult { reminded: number; skipped: number; lapsed: number; actions: { invoice: string; business: string; result: string }[]; emailConfigured: boolean }
 
 export interface RevenueSummary {
   currency: string
@@ -767,6 +794,9 @@ export interface RevenueSummary {
   netCollected: number
   outstanding: number
   overdue: number
+  /** GST on invoices issued / on invoices paid in the period (not part of revenue) */
+  gstCharged: number
+  gstCollected: number
   counts: {
     businesses: number; suspended: number; activeSubscriptions: number; trialing: number; cancelled: number; withoutSubscription: number
     recurring: number; renewalsDue: number; renewalsOverdue: number; overdueInvoices: number; outstandingInvoices: number
