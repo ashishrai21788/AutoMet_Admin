@@ -50,7 +50,8 @@ export default function App() {
       <FeedbackProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<Login kind="business" />} />
+            <Route path="/platform/login" element={<Login kind="platform" />} />
             <Route element={<RequireAuth />}>
               <Route element={<AppLayout />}>
                 <Route path="account" element={<Account />} />

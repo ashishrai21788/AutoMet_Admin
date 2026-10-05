@@ -93,9 +93,9 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 /**
- * One business, from the platform owner's side: its identity and plan, whether it is set up, how much it is used (counts
- * only), and who administers it. The business's own drivers, riders, trips and documents are not shown here; they belong to
- * the business and its admins.
+ * One business, from the platform owner's side: its identity, whether it is set up, its subscription and billing, and the
+ * accounts of its admins. Its drivers, riders, trips, documents and usage belong to the business and its own admins and are
+ * not shown here.
  */
 export default function BusinessDetail() {
   const { id = '' } = useParams()
@@ -106,7 +106,6 @@ export default function BusinessDetail() {
   const [deleting, setDeleting] = useState(false)
 
   const list = useQuery({ queryKey: ['businesses'], queryFn: api.businesses.list })
-  const overview = useQuery({ queryKey: ['platform-overview'], queryFn: platform.overview })
 
   const changeStatus = useMutation({
     mutationFn: (next: 'active' | 'trial' | 'suspended') => api.businesses.setStatus(id, next),
@@ -118,7 +117,6 @@ export default function BusinessDetail() {
   if (list.isError) return <ErrorState error={list.error} onRetry={() => list.refetch()} />
   const b = list.data!.find((x) => x.appId === id)
   if (!b) return <EmptyState title="Business not found" text="It may have been removed." action={<Link to="/businesses"><Button>All businesses</Button></Link>} />
-  const usage = overview.data?.businesses.find((x) => x.appId === id)
 
   async function toggle() {
     const suspending = b!.status !== 'suspended'
@@ -148,7 +146,7 @@ export default function BusinessDetail() {
       {editing && <EditBusinessModal business={b} onClose={() => setEditing(false)} />}
       {deleting && <DeleteBusinessModal business={b} onClose={() => setDeleting(false)} />}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div>
         <Card className="p-5">
           <h2 className="mb-2 font-semibold">Details</h2>
           <dl className="divide-y divide-line">
@@ -160,19 +158,6 @@ export default function BusinessDetail() {
           </dl>
         </Card>
 
-        <Card className="p-5">
-          <h2 className="mb-2 font-semibold">Usage</h2>
-          {overview.isLoading ? <Spinner /> : !usage ? <p className="text-sm text-muted">No usage figures yet.</p> : (
-            <dl className="divide-y divide-line">
-              <Row label="Drivers">{usage.drivers.total} <span className="text-muted">({usage.drivers.online} online)</span></Row>
-              <Row label="Riders">{usage.riders.total} <span className="text-muted">(+{usage.riders.newThisWeek} this week)</span></Row>
-              <Row label="Trips today">{usage.trips.requestedToday} <span className="text-muted">({usage.trips.active} in progress)</span></Row>
-              <Row label="Trips in 7 days">{usage.trips.last7Days}</Row>
-              <Row label="Admin accounts">{usage.admins}</Row>
-            </dl>
-          )}
-          <p className="mt-3 text-xs text-muted">Counts only. The business's own drivers, riders, trips and documents are managed by its own admins.</p>
-        </Card>
       </div>
 
       <BillingPanel appId={b.appId} name={b.name} />

@@ -1,12 +1,13 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/store/auth'
 import { can, type Permission } from '@/lib/permissions'
+import { BUSINESS_LOGIN, PLATFORM_LOGIN, isPlatformPath } from '@/lib/portal'
 import { Card } from './ui'
 
 export function RequireAuth() {
   const session = useAuth((s) => s.session)
   const location = useLocation()
-  if (!session) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (!session) return <Navigate to={isPlatformPath(location.pathname) ? PLATFORM_LOGIN : BUSINESS_LOGIN} replace state={{ from: location.pathname }} />
   if (session.user.mustChangePassword && location.pathname !== '/account') return <Navigate to="/account" replace />
   return <Outlet />
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
@@ -12,6 +12,7 @@ import { useAuth } from '@/store/auth'
 import { useUi } from '@/store/ui'
 import { can, isSuperAdmin, ROLE_LABEL, type Permission } from '@/lib/permissions'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { loginPathFor } from '@/lib/portal'
 
 type Icon = typeof MapPin
 interface NavItem { to: string; label: string; icon: Icon; permission?: Permission; end?: boolean }
@@ -49,6 +50,22 @@ const BUSINESS_NAV: NavItem[] = [
 ]
 
 /** Open critical and warning alerts, next to the Alerts menu item. Quiet when there are none or the list cannot be read. */
+/** Black or white text for a brand colour, whichever reads better on it. */
+const readableOn = (hex: string) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex)
+  if (!m) return '#1a1200'
+  const n = parseInt(m[1], 16)
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
+  return lum > 0.6 ? '#1a1200' : '#ffffff'
+}
+
+/** A business's own logo, or its initial on its brand colour. Nothing of AutoMet shows to a business admin. */
+function BusinessMark({ name, logoUrl, color }: { name: string; logoUrl: string; color: string }) {
+  const [broken, setBroken] = useState(false)
+  if (logoUrl && !broken) return <img src={logoUrl} alt="" onError={() => setBroken(true)} className="h-8 w-8 shrink-0 rounded-lg bg-white object-contain" />
+  return <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand text-sm font-semibold text-brand-fg" style={color ? { background: color, color: readableOn(color) } : undefined} aria-hidden>{(name.trim()[0] ?? '?').toUpperCase()}</div>
+}
+
 function AlertCount({ mini }: { mini: boolean }) {
   const alerts = useAlerts()
   const counts = alerts.data?.counts
@@ -78,6 +95,17 @@ export default function AppLayout() {
   const businesses = useQuery({ queryKey: ['businesses'], queryFn: api.businesses.list, enabled: !superAdmin })
   const current = businesses.data?.find((b) => b.appId === user.tenantId)
 
+  // a business admin sees their own business: its name in the tab, and its brand colour as the accent
+  const brandColor = !superAdmin && current ? current.brandColor : ''
+  useEffect(() => { document.title = superAdmin ? 'AutoMet Platform' : current ? `${current.name} Admin` : 'Admin' }, [superAdmin, current])
+  useEffect(() => {
+    if (!brandColor) return
+    const root = document.documentElement.style
+    root.setProperty('--brand', brandColor)
+    root.setProperty('--brand-fg', readableOn(brandColor))
+    return () => { root.removeProperty('--brand'); root.removeProperty('--brand-fg') }
+  }, [brandColor])
+
 
   const items = BUSINESS_NAV.filter((n) => !n.permission || can(user, n.permission))
   const link = (n: NavItem, mini: boolean) => (
@@ -95,13 +123,17 @@ export default function AppLayout() {
     </NavLink>
   )
 
-  function signOut() { logout(); navigate('/login') }
+  function signOut() { logout(); navigate(loginPathFor(user.role)) }
 
   const sidebar = (mini: boolean) => (
     <>
       <div className={clsx('flex items-center gap-2 px-4 py-4', mini && 'justify-center px-2')}>
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand text-brand-fg"><ShieldCheck size={18} aria-hidden /></div>
-        {!mini && <div className="text-sm font-semibold leading-tight">AutoMet<br /><span className="font-normal text-muted">Admin</span></div>}
+        {superAdmin
+          ? <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand text-brand-fg"><ShieldCheck size={18} aria-hidden /></div>
+          : <BusinessMark name={current?.name ?? ''} logoUrl={current?.logoUrl ?? ''} color={current?.brandColor ?? ''} />}
+        {!mini && (superAdmin
+          ? <div className="text-sm font-semibold leading-tight">AutoMet<br /><span className="font-normal text-muted">Platform</span></div>
+          : <div className="min-w-0 text-sm font-semibold leading-tight"><span className="block truncate">{current?.name ?? ' '}</span><span className="font-normal text-muted">Admin</span></div>)}
       </div>
       <nav aria-label="Main" className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-3">
         {/* the platform owner manages businesses; a business's own screens (drivers, trips, pricing...) belong to its admins */}
