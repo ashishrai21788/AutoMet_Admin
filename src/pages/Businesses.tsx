@@ -84,7 +84,7 @@ export default function Businesses() {
   const copy = async (id: string) => { try { await navigator.clipboard.writeText(id); toast.success('App ID copied') } catch { toast.error('Could not copy; select the App ID and copy it manually') } }
 
   const columns: Column<Business>[] = [
-    { header: 'Business', cell: (b) => <div><div className="font-medium"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: b.brandColor }} aria-hidden />{b.name}</div><div className="text-xs text-muted">{b.appName} · {b.packageName}</div></div> },
+    { header: 'Business', cell: (b) => <div><div className="font-medium"><span className="mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: b.brandColor }} aria-hidden />{b.name}{b.isDefault && <span className="ml-2 align-middle" title="Owns the riders and drivers created before businesses existed, so it cannot be suspended or deleted"><Badge>Default</Badge></span>}</div><div className="text-xs text-muted">{b.appName} · {b.packageName}</div></div> },
     { header: 'App ID', cell: (b) => <span className="inline-flex items-center gap-1 font-mono text-xs">{b.appId}<button type="button" aria-label={`Copy App ID of ${b.name}`} onClick={() => copy(b.appId)} className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/10"><Copy size={13} /></button></span> },
     { header: 'Status', cell: (b) => <Badge kind={statusKind[b.status]}>{b.status}</Badge> },
     { header: 'Setup', cell: (b) => b.setup ? (b.setup.complete ? <Badge kind="ok">Complete</Badge> : <span className="text-xs"><strong>{b.setup.percent}%</strong> · next: {b.setup.nextStep}</span>) : '—' },

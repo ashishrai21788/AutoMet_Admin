@@ -151,6 +151,7 @@ export default function BusinessDetail() {
         subtitle={`${b.appName} · ${b.packageName}`}
         action={
           <div className="flex flex-wrap items-center gap-2">
+            {b.isDefault && <Badge>Default</Badge>}
             <Badge kind={statusKind[b.status]}>{b.status}</Badge>
             <Button variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
             <Button variant={b.status === 'suspended' ? 'ghost' : 'danger'} loading={changeStatus.isPending} onClick={toggle}>{b.status === 'suspended' ? 'Activate' : 'Suspend'}</Button>
@@ -158,6 +159,7 @@ export default function BusinessDetail() {
           </div>
         }
       />
+      {b.isDefault && <p className="-mt-3 mb-4 text-xs text-muted">This is the default business. It owns the riders and drivers created before businesses existed, so it cannot be suspended or deleted. You can still edit it, set up its billing and add its admins.</p>}
       {editing && <EditBusinessModal business={b} onClose={() => setEditing(false)} />}
       {deleting && <DeleteBusinessModal business={b} onClose={() => setDeleting(false)} />}
 

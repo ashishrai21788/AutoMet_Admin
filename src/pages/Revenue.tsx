@@ -36,8 +36,8 @@ function Series({ s }: { s: RevenueSummary }) {
       </div>
       <div className="mt-3 flex gap-4 text-xs text-muted"><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-black/15 dark:bg-white/20" />Billed</span><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-brand" />Collected</span></div>
       <details className="mt-3 text-xs"><summary className="cursor-pointer text-muted">Show the figures</summary>
-        <table className="mt-2 w-full text-right tabular-nums"><thead className="text-muted"><tr><th className="text-left font-medium">Month</th><th className="font-medium">Billed</th><th className="font-medium">Collected</th><th className="font-medium">Refunded</th><th className="font-medium">Net</th></tr></thead>
-          <tbody>{s.series.map((x) => <tr key={x.month}><td className="text-left">{monthName(x.month)}</td><td>{fmtMoney(x.billed, s.currency)}</td><td>{fmtMoney(x.collected, s.currency)}</td><td>{fmtMoney(x.refunded, s.currency)}</td><td>{fmtMoney(x.net, s.currency)}</td></tr>)}</tbody></table>
+        <div className="overflow-x-auto"><table className="mt-2 w-full min-w-[26rem] text-right tabular-nums"><thead className="text-muted"><tr><th className="text-left font-medium">Month</th><th className="font-medium">Billed</th><th className="font-medium">Collected</th><th className="font-medium">Refunded</th><th className="font-medium">Net</th></tr></thead>
+          <tbody>{s.series.map((x) => <tr key={x.month}><td className="text-left">{monthName(x.month)}</td><td>{fmtMoney(x.billed, s.currency)}</td><td>{fmtMoney(x.collected, s.currency)}</td><td>{fmtMoney(x.refunded, s.currency)}</td><td>{fmtMoney(x.net, s.currency)}</td></tr>)}</tbody></table></div>
       </details>
     </Card>
   )
@@ -54,8 +54,17 @@ export default function Revenue() {
   const invParams = { status: status || undefined, type: type || undefined, page, pageSize: 10 }
   const invoices = useQuery({ queryKey: ['platform-invoices', invParams], queryFn: () => platform.invoices(invParams), placeholderData: keepPreviousData })
 
-  if (summary.isLoading) return <Spinner />
-  if (summary.isError) return <ErrorState error={summary.error} onRetry={() => summary.refetch()} />
+  // the date filter stays on screen whatever happens, so a bad range can always be corrected
+  const [today] = useState(() => new Date().toISOString().slice(0, 10))
+  const dateFilter = (
+    <div className="mt-4 grid grid-cols-2 gap-3 sm:max-w-md">
+      <TextField label="From" type="date" value={from} max={to || today} onChange={(e) => setFrom(e.target.value)} />
+      <TextField label="To" type="date" value={to} min={from || undefined} max={today} onChange={(e) => setTo(e.target.value)} />
+    </div>
+  )
+  const header = <PageHeader title="Platform revenue" subtitle="What businesses pay AutoMet for the platform. This is not the fares their riders pay." />
+  if (summary.isLoading) return <>{header}{dateFilter}<Spinner /></>
+  if (summary.isError) return <>{header}{dateFilter}<div className="mt-4"><ErrorState error={summary.error} onRetry={() => summary.refetch()} /></div></>
   const s = summary.data!
   const c = s.currency
   const money = (n: number) => fmtMoney(n, c)
@@ -76,7 +85,7 @@ export default function Revenue() {
       <PageHeader title="Platform revenue" subtitle={`What businesses pay AutoMet for the platform. This is not the fares their riders pay. Currency: ${c}.`} />
       <Alert kind="info">Figures come only from subscriptions and invoices you record here. Payments are recorded by hand, so “collected” is what you have marked as received.</Alert>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:max-w-md"><TextField label="From" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /><TextField label="To" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></div>
+      {dateFilter}
       <p className="mt-1 text-xs text-muted">The date range limits billed, collected and refunded (default: last twelve months). Recurring revenue and amounts outstanding are always as of today.</p>
 
       <h2 className="mb-2 mt-6 text-sm font-semibold">Recurring revenue (today)</h2>
@@ -101,7 +110,7 @@ export default function Revenue() {
         <Stat label="Overdue" value={money(s.overdue)} hint={`${s.counts.overdueInvoices} past the due date`} />
       </div>
 
-      <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <Series s={s} />
         <Card className="p-5">
           <h2 className="mb-2 font-semibold">Upcoming renewals</h2>
@@ -114,7 +123,7 @@ export default function Revenue() {
         </Card>
       </div>
 
-      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card>
           <div className="border-b border-line px-5 py-3"><h2 className="font-semibold">By business</h2></div>
           <DataTable rows={s.byBusiness} columns={businessCols} rowKey={(b) => b.appId} empty={{ title: 'No businesses yet' }} />

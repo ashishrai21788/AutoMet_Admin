@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
 import { api, ApiError, API_CONFIGURED, NOT_CONFIGURED_MESSAGE } from '@/api'
@@ -21,6 +21,8 @@ export default function Login({ kind }: { kind: 'platform' | 'business' }) {
   const [challenge, setChallenge] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [useRecovery, setUseRecovery] = useState(false)
+  // the tab says what this page is, and never names AutoMet to a business
+  useEffect(() => { document.title = platform ? 'AutoMet Platform' : 'Business Admin' }, [platform])
 
   if (session) return <Navigate to={session.user.role === 'super_admin' ? '/platform' : '/'} replace />
 
