@@ -4,6 +4,7 @@ import { api } from '@/api'
 import { useAuth } from '@/store/auth'
 import { ROLE_LABEL } from '@/lib/permissions'
 import { useToast } from '@/components/feedback'
+import TwoFactorCard from '@/components/TwoFactorCard'
 import { Alert, Button, Card, PageHeader, TextField } from '@/components/ui'
 
 export default function Account() {
@@ -45,6 +46,7 @@ export default function Account() {
           <dt className="text-muted">Role</dt><dd>{ROLE_LABEL[user.role]}</dd>
         </dl>
       </Card>
+      <TwoFactorCard />
       {user.mustChangePassword && <div className="mb-4 max-w-md"><Alert kind="warn">You are using a temporary password. Choose a new one to continue.</Alert></div>}
       <Card className="max-w-md p-5">
         <h2 className="mb-4 font-semibold">Change password</h2>

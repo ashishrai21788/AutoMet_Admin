@@ -48,6 +48,15 @@ export function TeamManager({ tenantId, embedded = false }: { tenantId: string |
     onSuccess: (u) => { qc.invalidateQueries({ queryKey: ['users'] }); setEditing(null); toast.success(`${u.name} was updated`) },
     onError: (e) => { if (!(e instanceof ApiError) || Object.keys(e.fieldErrors).length === 0) toast.error(e.message) },
   })
+  const resetTwoFactor = useMutation({
+    mutationFn: (id: string) => api.users.resetTwoFactor(id),
+    onSuccess: (u) => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success(`Two-step verification was reset for ${u.name}`) },
+    onError: (e) => toast.error(e.message),
+  })
+  async function doResetTwoFactor(u: AdminUser) {
+    if (!(await confirm({ title: `Reset ${u.name}'s two-step verification?`, message: 'Use this when they have lost their phone and recovery codes. They are signed out everywhere, and sign in with their password only until they set it up again.', confirmLabel: 'Reset', danger: true }))) return
+    resetTwoFactor.mutate(u.id)
+  }
   const reset = useMutation({
     mutationFn: (id: string) => api.users.resetPassword(id),
     onSuccess: (r) => { setCreated(null); setResetNotice({ title: `New one-time password for ${r.name}`, email: r.email, password: r.temporaryPassword }); toast.success('Password reset') },
@@ -92,6 +101,7 @@ export function TeamManager({ tenantId, embedded = false }: { tenantId: string |
       <div className="flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={() => openEdit(u)}>Edit</Button>
         {u.id !== user.id && <Button variant="ghost" loading={reset.isPending && reset.variables === u.id} onClick={() => doReset(u)}>Reset password</Button>}
+        {u.id !== user.id && u.twoFactorEnabled && <Button variant="ghost" loading={resetTwoFactor.isPending && resetTwoFactor.variables === u.id} onClick={() => doResetTwoFactor(u)}>Reset 2-step</Button>}
         {u.id !== user.id && <Button variant={u.active === false ? 'ghost' : 'danger'} loading={setActive.isPending && setActive.variables?.id === u.id} onClick={() => toggle(u)}>{u.active === false ? 'Activate' : 'Deactivate'}</Button>}
       </div>
     ) },

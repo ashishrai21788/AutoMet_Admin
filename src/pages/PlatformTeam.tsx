@@ -38,6 +38,15 @@ export default function PlatformTeam() {
     onSuccess: (u) => { refresh(); toast.success(`${u.name} is now ${u.active === false ? 'inactive' : 'active'}`) },
     onError: (e) => toast.error(e.message),
   })
+  const resetTwoFactor = useMutation({
+    mutationFn: (id: string) => platform.team.resetTwoFactor(id),
+    onSuccess: (u) => { refresh(); toast.success(`Two-step verification was reset for ${u.name}`) },
+    onError: (e) => toast.error(e.message),
+  })
+  async function doResetTwoFactor(u: AdminUser) {
+    if (!(await confirm({ title: `Reset ${u.name}'s two-step verification?`, message: 'They are signed out everywhere. At their next sign-in they must set it up again before they can use the dashboard.', confirmLabel: 'Reset', danger: true }))) return
+    resetTwoFactor.mutate(u.id)
+  }
   const reset = useMutation({
     mutationFn: (id: string) => platform.team.resetPassword(id),
     onSuccess: (r) => { setSecret({ title: `New one-time password for ${r.name}`, email: r.email, password: r.temporaryPassword }); toast.success('Password reset') },
@@ -67,11 +76,12 @@ export default function PlatformTeam() {
   const columns: Column<AdminUser>[] = [
     { header: 'Name', cell: (u) => <span className="font-medium">{u.name}{u.id === me.id && <span className="ml-1 text-xs text-muted">(you)</span>}</span> },
     { header: 'Email', cell: (u) => u.email },
-    { header: 'Status', cell: (u) => <Badge kind={u.active === false ? 'bad' : 'ok'}>{u.active === false ? 'Inactive' : 'Active'}</Badge> },
+    { header: 'Status', cell: (u) => <span className="inline-flex items-center gap-1"><Badge kind={u.active === false ? 'bad' : 'ok'}>{u.active === false ? 'Inactive' : 'Active'}</Badge>{u.twoFactorEnabled && <Badge>2-step</Badge>}</span> },
     { header: 'Actions', hideLabel: true, className: 'text-right', cell: (u) => (
       <div className="flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={() => { setNewName(u.name); rename.reset(); setRenaming(u) }}>Rename</Button>
         {u.id !== me.id && <Button variant="ghost" loading={reset.isPending && reset.variables === u.id} onClick={() => doReset(u)}>Reset password</Button>}
+        {u.id !== me.id && u.twoFactorEnabled && <Button variant="ghost" loading={resetTwoFactor.isPending && resetTwoFactor.variables === u.id} onClick={() => doResetTwoFactor(u)}>Reset 2-step</Button>}
         {u.id !== me.id && <Button variant={u.active === false ? 'ghost' : 'danger'} loading={setActive.isPending && setActive.variables?.id === u.id} onClick={() => toggle(u)}>{u.active === false ? 'Activate' : 'Deactivate'}</Button>}
       </div>
     ) },

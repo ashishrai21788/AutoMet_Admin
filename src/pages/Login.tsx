@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
-import { api, API_CONFIGURED, NOT_CONFIGURED_MESSAGE } from '@/api'
+import { api, ApiError, API_CONFIGURED, NOT_CONFIGURED_MESSAGE } from '@/api'
 import { useAuth } from '@/store/auth'
 import { BUSINESS_LOGIN, PLATFORM_LOGIN } from '@/lib/portal'
 import { Alert, Button, Card, TextField } from '@/components/ui'
@@ -18,6 +18,9 @@ export default function Login({ kind }: { kind: 'platform' | 'business' }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [wrong, setWrong] = useState(false)
+  const [challenge, setChallenge] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [useRecovery, setUseRecovery] = useState(false)
 
   if (session) return <Navigate to={session.user.role === 'super_admin' ? '/platform' : '/'} replace />
 
@@ -28,12 +31,34 @@ export default function Login({ kind }: { kind: 'platform' | 'business' }) {
     setError('')
     setWrong(false)
     try {
-      const next = await api.login(email, password)
+      const first = await api.login(email, password)
+      if ('twoFactorRequired' in first) { setChallenge(first.challenge); setCode(''); return }
+      const next = first
       if ((next.user.role === 'super_admin') !== platform) { setError(platform ? 'This sign-in is for the platform owner only. Business admins sign in at' : 'This sign-in is for business accounts only. The platform owner signs in at'); setWrong(true); return }
       setSession(next)
       navigate(from, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function submitCode(e: FormEvent) {
+    e.preventDefault()
+    if (busy || !challenge) return
+    setBusy(true)
+    setError('')
+    setWrong(false)
+    try {
+      const next = await api.verifyTwoFactor(challenge, useRecovery ? { recoveryCode: code.trim() } : { code: code.replace(/\s/g, '') })
+      if ((next.user.role === 'super_admin') !== platform) { setError(platform ? 'This sign-in is for the platform owner only. Business admins sign in at' : 'This sign-in is for business accounts only. The platform owner signs in at'); setWrong(true); setChallenge(null); return }
+      setSession(next)
+      navigate(from, { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign in failed')
+      // an expired sign-in cannot be retried with a new code: start again
+      if (err instanceof ApiError && err.status === 401 && /expired/i.test(err.message)) setChallenge(null)
     } finally {
       setBusy(false)
     }
@@ -51,6 +76,18 @@ export default function Login({ kind }: { kind: 'platform' | 'business' }) {
         </div>
         {notice && <div className="mb-4"><Alert kind="info">{notice}</Alert></div>}
         {!API_CONFIGURED && <div className="mb-4"><Alert kind="error">{NOT_CONFIGURED_MESSAGE}</Alert></div>}
+        {challenge ? (
+          <form onSubmit={submitCode} className="space-y-4">
+            <p className="text-sm text-muted">{useRecovery ? 'Enter one of your recovery codes. Each works once.' : 'Open your authenticator app and enter the 6-digit code.'}</p>
+            <TextField label={useRecovery ? 'Recovery code' : 'Code'} required autoFocus autoComplete="one-time-code" inputMode={useRecovery ? 'text' : 'numeric'} maxLength={useRecovery ? 12 : 7} value={code} onChange={(e) => setCode(e.target.value)} />
+            {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+            <Button type="submit" className="w-full" loading={busy}>{busy ? 'Checking…' : 'Verify'}</Button>
+            <div className="flex justify-between text-sm">
+              <button type="button" className="underline" onClick={() => { setUseRecovery(!useRecovery); setCode(''); setError('') }}>{useRecovery ? 'Use the app instead' : 'Use a recovery code'}</button>
+              <button type="button" className="underline" onClick={() => { setChallenge(null); setPassword(''); setError('') }}>Start again</button>
+            </div>
+          </form>
+        ) : (
         <form onSubmit={submit} className="space-y-4">
           <TextField label="Email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
           <TextField label="Password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -58,6 +95,7 @@ export default function Login({ kind }: { kind: 'platform' | 'business' }) {
           <Button type="submit" className="w-full" loading={busy} disabled={!API_CONFIGURED}>{busy ? 'Signing in…' : 'Sign in'}</Button>
           <div className="text-center"><Link to={platform ? '/platform/forgot-password' : '/forgot-password'} className="text-sm underline">Forgot your password?</Link></div>
         </form>
+        )}
       </Card>
     </div>
   )

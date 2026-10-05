@@ -7,8 +7,12 @@ import { Card } from './ui'
 export function RequireAuth() {
   const session = useAuth((s) => s.session)
   const location = useLocation()
-  if (!session) return <Navigate to={isPlatformPath(location.pathname) ? PLATFORM_LOGIN : BUSINESS_LOGIN} replace state={{ from: location.pathname }} />
-  if (session.user.mustChangePassword && location.pathname !== '/account') return <Navigate to="/account" replace />
+  if (!session) {
+    let last: string | null = null
+    try { last = sessionStorage.getItem('automet-last-portal') } catch { /* storage unavailable */ }
+    return <Navigate to={isPlatformPath(location.pathname) || last === 'platform' ? PLATFORM_LOGIN : BUSINESS_LOGIN} replace state={{ from: location.pathname }} />
+  }
+  if ((session.user.mustChangePassword || session.user.twoFactorSetupRequired) && location.pathname !== '/account') return <Navigate to="/account" replace />
   return <Outlet />
 }
 

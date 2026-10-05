@@ -38,6 +38,10 @@ export interface AdminUser {
   tenantId: string | null
   /** Set for accounts created with a temporary password; the dashboard asks for a new one. */
   mustChangePassword?: boolean
+  /** Authenticator-app sign-in is on for this account. */
+  twoFactorEnabled?: boolean
+  /** The platform owner must turn it on before the dashboard opens. */
+  twoFactorSetupRequired?: boolean
   /** false once an admin has deactivated the account. */
   active?: boolean
 }
@@ -46,6 +50,11 @@ export interface Session {
   token: string
   user: AdminUser
 }
+
+/** The password was right but the account needs its two-step code before a session is given. */
+export interface TwoFactorChallenge { twoFactorRequired: true; challenge: string }
+
+export interface TwoFactorSetup { secret: string; otpauthUri: string }
 
 export interface NewBusinessInput {
   name: string

@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AssignSubscriptionInput, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -127,7 +127,14 @@ const q = (appId: string | null) => (appId ? `?tenantId=${encodeURIComponent(app
 
 export const api = {
   login: (email: string, password: string) =>
-    request<Session>('/api/admin/auth/login', { method: 'POST', body: json({ email, password }) }),
+    request<Session | TwoFactorChallenge>('/api/admin/auth/login', { method: 'POST', body: json({ email, password }) }),
+  verifyTwoFactor: (challenge: string, input: { code: string } | { recoveryCode: string }) =>
+    request<Session>('/api/admin/auth/2fa/verify', { method: 'POST', body: json({ challenge, ...input }) }),
+  twoFactor: {
+    setup: () => request<TwoFactorSetup>('/api/admin/auth/2fa/setup', { method: 'POST' }),
+    enable: (code: string) => request<Session & { recoveryCodes: string[] }>('/api/admin/auth/2fa/enable', { method: 'POST', body: json({ code }) }),
+    disable: (password: string, code: string) => request<Session>('/api/admin/auth/2fa/disable', { method: 'POST', body: json({ password, code }) }),
+  },
   forgotPassword: (email: string) => request<{ message: string }>('/api/admin/auth/forgot-password', { method: 'POST', body: json({ email }) }),
   resetPassword: (token: string, password: string) => request<{ role: 'super_admin' | 'client_admin' | 'operations' | 'support' | 'finance' }>('/api/admin/auth/reset-password', { method: 'POST', body: json({ token, password }) }),
   changePassword: (currentPassword: string, newPassword: string) =>
@@ -151,6 +158,7 @@ export const api = {
     update: (userId: string, input: { name?: string; role?: NewUserInput['role'] }) =>
       request<AdminUser>(`/api/admin/users/${userId}`, { method: 'PATCH', body: json(input) }),
     resetPassword: (userId: string) => request<CreatedUser>(`/api/admin/users/${userId}/reset-password`, { method: 'POST' }),
+    resetTwoFactor: (userId: string) => request<AdminUser>(`/api/admin/users/${userId}/reset-2fa`, { method: 'POST' }),
   },
 
   // one business's configuration (the X-App-Id header names the business)
@@ -273,6 +281,7 @@ export const platform = {
     rename: (id: string, name: string) => request<AdminUser>(`/api/admin/platform/team/${id}`, { method: 'PATCH', body: json({ name }) }),
     setActive: (id: string, active: boolean) => request<AdminUser>(`/api/admin/platform/team/${id}/active`, { method: 'PATCH', body: json({ active }) }),
     resetPassword: (id: string) => request<CreatedUser>(`/api/admin/platform/team/${id}/reset-password`, { method: 'POST' }),
+    resetTwoFactor: (id: string) => request<AdminUser>(`/api/admin/platform/team/${id}/reset-2fa`, { method: 'POST' }),
   },
   audit: (params: Record<string, string | number | undefined>) => request<PlatformAuditPage>(`/api/admin/platform/audit${qs(params)}`),
 }

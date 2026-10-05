@@ -16,7 +16,11 @@ export const useAuth = create<AuthState>()(
     (set) => ({
       session: null,
       activeTenantId: null,
-      setSession: (session) => set({ session, activeTenantId: session.user.tenantId }),
+      setSession: (session) => {
+        // remembered past logout, so a signed-out person lands on the sign-in they came from (platform or business)
+        try { sessionStorage.setItem('automet-last-portal', session.user.role === 'super_admin' ? 'platform' : 'business') } catch { /* storage unavailable */ }
+        set({ session, activeTenantId: session.user.tenantId })
+      },
       setActiveTenant: (activeTenantId) => set({ activeTenantId }),
       logout: () => set({ session: null, activeTenantId: null }),
     }),
