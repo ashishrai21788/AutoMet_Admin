@@ -258,7 +258,25 @@ export default function DriverDetail() {
         </Card>
       )}
 
-      {tab === 'documents' && <DocumentsPanel kind="drivers" subjectId={d.id} canUpload={canManage} />}
+      {tab === 'documents' && (
+        <div className="space-y-8">
+          <section>
+            <h2 className="mb-3 font-semibold">Driver documents</h2>
+            <DocumentsPanel kind="drivers" subjectId={d.id} canUpload={canManage} />
+          </section>
+          <section>
+            <h2 className="mb-1 font-semibold">Vehicle documents{d.vehicle ? ` · ${d.vehicle.registrationNumber}` : ''}</h2>
+            {d.vehicle ? (
+              <>
+                <p className="mb-3 text-sm text-muted">The documents the business requires for the assigned vehicle (registration, insurance and so on). They are reviewed here or on the vehicle's own page.</p>
+                <DocumentsPanel kind="vehicles" subjectId={d.vehicle.id} canUpload={canManage} />
+              </>
+            ) : (
+              <Card><EmptyState title="No vehicle assigned" text="Vehicle documents such as insurance appear here once the driver has a vehicle assigned." /></Card>
+            )}
+          </section>
+        </div>
+      )}
       {tab === 'vehicle' && <VehicleTab driver={d} canManage={canManage} />}
 
       {tab === 'region' && (
