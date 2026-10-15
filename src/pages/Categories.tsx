@@ -20,7 +20,7 @@ export function CategoryIcon({ icon, size = 18 }: { icon: IconKey; size?: number
   return <I size={size} aria-hidden />
 }
 
-const blank: CategoryInput = { name: '', description: '', icon: 'car', imageUrl: '', passengerCapacity: 4, luggageCapacity: '', rideType: 'economy', regionIds: [] }
+const blank: CategoryInput = { name: '', description: '', icon: 'car', imageUrl: '', mapIconUrl: '', passengerCapacity: 4, luggageCapacity: '', rideType: 'economy', regionIds: [] }
 
 function validate(f: CategoryInput): Record<string, string> {
   const e: Record<string, string> = {}
@@ -33,13 +33,14 @@ function validate(f: CategoryInput): Record<string, string> {
     if (!Number.isInteger(lc) || lc < 0 || lc > 20) e.luggageCapacity = 'Enter a whole number from 0 to 20, or leave empty'
   }
   if (f.imageUrl.trim() && !/^https:\/\/\S+$/i.test(f.imageUrl.trim())) e.imageUrl = 'The link must start with https://'
+  if (f.mapIconUrl.trim() && !/^https:\/\/\S+$/i.test(f.mapIconUrl.trim())) e.mapIconUrl = 'The link must start with https://'
   if (f.regionIds.length === 0) e.regionIds = 'Choose at least one region where this category is available'
   return e
 }
 
 function CategoryModal({ category, regions, onClose }: { category: Category | null; regions: Region[]; onClose: () => void }) {
   const [form, setForm] = useState<CategoryInput>(category ? {
-    name: category.name, description: category.description, icon: category.icon, imageUrl: category.imageUrl,
+    name: category.name, description: category.description, icon: category.icon, imageUrl: category.imageUrl, mapIconUrl: category.mapIconUrl ?? '',
     passengerCapacity: category.passengerCapacity, luggageCapacity: category.luggageCapacity ?? '', rideType: category.rideType, regionIds: category.regionIds,
   } : blank)
   const [touched, setTouched] = useState(false)
@@ -55,7 +56,7 @@ function CategoryModal({ category, regions, onClose }: { category: Category | nu
   function submit(e: FormEvent) {
     e.preventDefault()
     setTouched(true)
-    if (Object.keys(local).length === 0) save.mutate({ ...form, name: form.name.trim(), description: form.description.trim(), imageUrl: form.imageUrl.trim() })
+    if (Object.keys(local).length === 0) save.mutate({ ...form, name: form.name.trim(), description: form.description.trim(), imageUrl: form.imageUrl.trim(), mapIconUrl: form.mapIconUrl.trim() })
   }
 
   return (
@@ -84,6 +85,7 @@ function CategoryModal({ category, regions, onClose }: { category: Category | nu
           </div>
         </fieldset>
         <TextField label="Image link (optional)" className="sm:col-span-2" type="url" placeholder="https://…" value={form.imageUrl} onChange={(e) => set('imageUrl', e.target.value)} error={fe.imageUrl} hint="A picture shown instead of the icon, if you have one." />
+        <TextField label="Map icon link (optional)" className="sm:col-span-2" type="url" placeholder="https://…" value={form.mapIconUrl} onChange={(e) => set('mapIconUrl', e.target.value)} error={fe.mapIconUrl} hint="The vehicle drawn on the rider's map: a top view facing up, transparent PNG, about 96×160 px and under 100 KB. Without it the app uses a built-in icon." />
 
         <fieldset className="sm:col-span-2">
           <legend className="mb-1 text-xs font-medium text-muted">Available in these regions</legend>

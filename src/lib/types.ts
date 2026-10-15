@@ -126,6 +126,7 @@ export interface Category {
   description: string
   icon: IconKey
   imageUrl: string
+  mapIconUrl?: string
   passengerCapacity: number
   luggageCapacity: number | null
   rideType: string
@@ -140,6 +141,7 @@ export interface CategoryInput {
   description: string
   icon: IconKey
   imageUrl: string
+  mapIconUrl: string
   passengerCapacity: number | string
   luggageCapacity: number | string | null
   rideType: string
