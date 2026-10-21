@@ -872,3 +872,30 @@ export interface IncentiveItem {
 export interface IncentiveInput { name: string; description?: string; targetTrips: number; bonus: number; startsAt: string; endsAt: string; categoryId: string | null; active: boolean }
 
 export interface AdjustmentItem { id: string; driverId: string; driverName: string; kind: 'INCENTIVE' | 'ADJUSTMENT'; amount: number; title: string; reason: string; at: string; by: string }
+
+export interface CouponItem {
+  id: string
+  code: string
+  title: string
+  description: string
+  type: 'PERCENT' | 'FIXED'
+  value: number
+  maxDiscount: number
+  minFare: number
+  startsAt: string
+  endsAt: string
+  totalLimit: number
+  perUserLimit: number
+  categoryIds: string[]
+  regionIds: string[]
+  newUsersOnly: boolean
+  fundedBy: 'BUSINESS' | 'DRIVER'
+  active: boolean
+  redeemed: number
+  state: 'LIVE' | 'SCHEDULED' | 'EXPIRED' | 'USED_UP' | 'OFF'
+}
+export interface CouponInput {
+  code: string; title: string; type: 'PERCENT' | 'FIXED'; value: number; maxDiscount: number; minFare: number; totalLimit: number; perUserLimit: number
+  startsAt: string; endsAt: string; categoryIds: string[]; regionIds: string[]; newUsersOnly: boolean; fundedBy: 'BUSINESS' | 'DRIVER'; active: boolean
+}
+export interface CouponUse { id: string; userId: string; tripId: string; discount: number; state: 'RESERVED' | 'REDEEMED' | 'RELEASED'; at: string }

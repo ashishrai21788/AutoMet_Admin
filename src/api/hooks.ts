@@ -98,6 +98,14 @@ export function usePayouts(params: Params) {
   return useQuery({ queryKey: ['biz', tenantId, 'payouts', params], queryFn: () => ops.payouts.list(params), enabled: !!tenantId, placeholderData: keepPreviousData, refetchInterval: 60000 })
 }
 export const usePayout = (id: string, enabled = true) => useBusinessQuery(`payout:${id}`, () => ops.payouts.get(id), !!id && enabled)
+export function useCoupons(params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'coupons', params], queryFn: () => ops.coupons.list(params), enabled: !!tenantId, placeholderData: keepPreviousData })
+}
+export function useCouponRedemptions(id: string, params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'coupon-uses', id, params], queryFn: () => ops.coupons.uses(id, params), enabled: !!tenantId && !!id, placeholderData: keepPreviousData })
+}
 export const useIncentives = () => useBusinessQuery('incentives', ops.incentives.list)
 export const useAdjustments = (params: Params) => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'adjustments', params], queryFn: () => ops.adjustments.list(params), enabled: !!tenantId }) }
 export const usePayoutSettings = () => useBusinessQuery('payout-settings', ops.payouts.settings)

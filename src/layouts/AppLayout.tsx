@@ -40,6 +40,7 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/riders', label: 'Riders', icon: UserRound, permission: 'riders.view' },
   { to: '/vehicles', label: 'Vehicles', icon: CarFront, permission: 'vehicles.view' },
   { to: '/verification', label: 'Driver Verification', icon: BadgeCheck, permission: 'documents.view' },
+  { to: '/coupons', label: 'Coupons', icon: Calculator, permission: 'payments.view' },
   { to: '/payouts', label: 'Driver Payouts', icon: Wallet, permission: 'payments.view' },
   { to: '/incentives', label: 'Incentives & Goals', icon: Gauge, permission: 'payments.view' },
   { to: '/support', label: 'Support', icon: LifeBuoy, permission: 'support.manage' },
