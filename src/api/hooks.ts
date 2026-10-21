@@ -93,6 +93,14 @@ export function useIssues(params: Params) {
   const { tenantId } = useScope()
   return useQuery({ queryKey: ['biz', tenantId, 'issues', params], queryFn: () => ops.support.list(params), enabled: !!tenantId, placeholderData: keepPreviousData, refetchInterval: 60000 })
 }
+export function usePayouts(params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'payouts', params], queryFn: () => ops.payouts.list(params), enabled: !!tenantId, placeholderData: keepPreviousData, refetchInterval: 60000 })
+}
+export const usePayout = (id: string, enabled = true) => useBusinessQuery(`payout:${id}`, () => ops.payouts.get(id), !!id && enabled)
+export const useIncentives = () => useBusinessQuery('incentives', ops.incentives.list)
+export const useAdjustments = (params: Params) => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'adjustments', params], queryFn: () => ops.adjustments.list(params), enabled: !!tenantId }) }
+export const usePayoutSettings = () => useBusinessQuery('payout-settings', ops.payouts.settings)
 export const useIssue = (id: string) => useBusinessQuery(`issue:${id}`, () => ops.support.get(id), !!id)
 export const useOpsStats = (enabled = true) => {
   const { tenantId } = useScope()

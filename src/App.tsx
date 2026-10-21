@@ -38,6 +38,8 @@ const AuditLog = lazy(() => import('@/pages/AuditLog'))
 const Trips = lazy(() => import('@/pages/Trips'))
 const Reports = lazy(() => import('@/pages/Reports'))
 const Support = lazy(() => import('@/pages/Support'))
+const Payouts = lazy(() => import('@/pages/Payouts'))
+const Incentives = lazy(() => import('@/pages/Incentives'))
 const LiveMap = lazy(() => import('@/pages/LiveMap'))
 const NotFound = lazy(() => import('@/pages/NotFound'))
 const TripDetail = lazy(() => import('@/pages/TripDetail'))
@@ -95,6 +97,10 @@ export default function App() {
                   <Route element={<RequirePermission permission="riders.view" />}>
                     <Route path="riders" element={<Riders />} />
                     <Route path="riders/:id" element={<RiderDetail />} />
+                  </Route>
+                  <Route element={<RequirePermission permission="payments.view" />}>
+                    <Route path="payouts" element={<Payouts />} />
+                    <Route path="incentives" element={<Incentives />} />
                   </Route>
                   <Route element={<RequirePermission permission="support.manage" />}>
                     <Route path="support" element={<Support />} />

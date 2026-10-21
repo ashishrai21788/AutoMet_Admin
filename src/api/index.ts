@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, IncentiveItem, IncentiveInput, AdjustmentItem, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -297,6 +297,24 @@ export const ops = {
     list: (params: Record<string, string | number | undefined>) => get<IssuePage>(`/support/issues${qs(params)}`),
     get: (id: string) => get<IssueDetail>(`/support/issues/${id}`),
     update: (id: string, input: { status?: IssueStatus; note?: string }) => send<{ id: string; status: IssueStatus }>('POST', `/support/issues/${id}`, input),
+  },
+  payouts: {
+    list: (params: Record<string, string | number | undefined>) => get<PayoutPage>(`/payouts${qs(params)}`),
+    get: (id: string) => get<PayoutDetail>(`/payouts/${id}`),
+    start: (id: string) => send<PayoutItem>('POST', `/payouts/${id}/start`, {}),
+    pay: (id: string, reference: string) => send<PayoutItem>('POST', `/payouts/${id}/pay`, { reference }),
+    fail: (id: string, reason: string) => send<PayoutItem>('POST', `/payouts/${id}/fail`, { reason }),
+    settings: () => get<PayoutSettings>('/payout-settings'),
+    updateSettings: (input: { commissionPercent: number; minWithdrawal: number; cashWithdrawable: boolean; processingNote: string }) => send<PayoutSettings>('PUT', '/payout-settings', input),
+  },
+  incentives: {
+    list: () => get<{ items: IncentiveItem[]; currency: string }>('/incentives'),
+    create: (input: IncentiveInput) => send<IncentiveItem>('POST', '/incentives', input),
+    update: (id: string, input: Partial<IncentiveInput>) => send<IncentiveItem>('PUT', `/incentives/${id}`, input),
+  },
+  adjustments: {
+    list: (params: Record<string, string | number | undefined>) => get<{ items: AdjustmentItem[]; currency: string }>(`/adjustments${qs(params)}`),
+    add: (input: { driverId: string; amount: number; reason: string }) => send<{ id: string }>('POST', '/adjustments', input),
   },
   report: (params: Record<string, string | number | undefined>) => get<ReportData>(`/reports/summary${qs(params)}`),
   stats: () => get<OpsStats>('/stats'),

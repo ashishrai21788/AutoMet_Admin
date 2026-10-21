@@ -26,13 +26,14 @@ export type Permission =
   | 'riders.manage'
   | 'trips.manage'
   | 'support.manage'
+  | 'payments.manage'
 
 const PLATFORM: Permission[] = ['clients.manage', 'platform.billing', 'platform.team', 'platform.audit', 'platform.settings']
 
 const BUSINESS: Permission[] = [
   'dashboard.view', 'drivers.view', 'drivers.manage', 'vehicles.view', 'vehicles.manage',
   'documents.view', 'verification.review', 'riders.view', 'trips.view', 'pricing.manage', 'payments.view',
-  'settings.manage', 'team.manage', 'audit.view', 'riders.manage', 'trips.manage', 'support.manage',
+  'settings.manage', 'team.manage', 'audit.view', 'riders.manage', 'trips.manage', 'support.manage', 'payments.manage',
 ]
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -43,7 +44,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'verification.review', 'riders.view', 'trips.view', 'riders.manage', 'trips.manage', 'support.manage',
   ],
   support: ['dashboard.view', 'drivers.view', 'vehicles.view', 'riders.view', 'trips.view', 'support.manage'],
-  finance: ['dashboard.view', 'trips.view', 'payments.view'],
+  finance: ['dashboard.view', 'trips.view', 'payments.view', 'payments.manage'],
 }
 
 export const ROLE_LABEL: Record<Role, string> = {

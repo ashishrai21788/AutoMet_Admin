@@ -816,3 +816,59 @@ export interface RevenueSummary {
   generatedAt: string
   partial: boolean
 }
+
+// ---- driver payouts (withdrawals the business pays) ----
+
+export type PayoutStatus = 'REQUESTED' | 'PROCESSING' | 'PAID' | 'FAILED' | 'CANCELLED'
+
+export interface PayoutItem {
+  id: string
+  driverId: string
+  driverName: string
+  driverPhone: string
+  amount: number
+  amountMinor: number
+  currency: string
+  status: PayoutStatus
+  bank: string
+  reference: string
+  failureReason: string
+  requestedAt: string
+  processingAt: string | null
+  paidAt: string | null
+  failedAt: string | null
+  cancelledAt: string | null
+}
+
+export interface PayoutDetail extends PayoutItem {
+  account: { holder: string; bankName: string; accountNumber: string; ifsc: string }
+  note: string
+}
+
+export interface PayoutPage extends Paged<PayoutItem> {
+  currency: string
+  totals: Record<PayoutStatus, { count: number; amount: number }>
+}
+
+export interface PayoutSettings { commissionPercent: number; minWithdrawal: number; cashWithdrawable: boolean; processingNote: string; currency: string }
+
+export interface IncentiveItem {
+  id: string
+  name: string
+  description: string
+  targetTrips: number
+  bonus: number
+  bonusMinor: number
+  startsAt: string
+  endsAt: string
+  categoryId: string | null
+  active: boolean
+  goalOnly: boolean
+  started: boolean
+  ended: boolean
+  reached: number
+  paid: number
+}
+export interface IncentiveInput { name: string; description?: string; targetTrips: number; bonus: number; startsAt: string; endsAt: string; categoryId: string | null; active: boolean }
+
+export interface AdjustmentItem { id: string; driverId: string; driverName: string; kind: 'INCENTIVE' | 'ADJUSTMENT'; amount: number; title: string; reason: string; at: string; by: string }
