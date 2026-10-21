@@ -98,6 +98,12 @@ export function usePayouts(params: Params) {
   return useQuery({ queryKey: ['biz', tenantId, 'payouts', params], queryFn: () => ops.payouts.list(params), enabled: !!tenantId, placeholderData: keepPreviousData, refetchInterval: 60000 })
 }
 export const usePayout = (id: string, enabled = true) => useBusinessQuery(`payout:${id}`, () => ops.payouts.get(id), !!id && enabled)
+export const useLegal = () => useBusinessQuery('legal', ops.legal.overview)
+export const useLegalAcceptances = () => useBusinessQuery('legal-acceptances', ops.legal.acceptances)
+export function useLegalVersions(type: string, params: Params) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'legal-versions', type, params], queryFn: () => ops.legal.versions(type, params), enabled: !!tenantId })
+}
 export function useCoupons(params: Params) {
   const { tenantId } = useScope()
   return useQuery({ queryKey: ['biz', tenantId, 'coupons', params], queryFn: () => ops.coupons.list(params), enabled: !!tenantId, placeholderData: keepPreviousData })

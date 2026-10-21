@@ -899,3 +899,10 @@ export interface CouponInput {
   startsAt: string; endsAt: string; categoryIds: string[]; regionIds: string[]; newUsersOnly: boolean; fundedBy: 'BUSINESS' | 'DRIVER'; active: boolean
 }
 export interface CouponUse { id: string; userId: string; tripId: string; discount: number; state: 'RESERVED' | 'REDEEMED' | 'RELEASED'; at: string }
+
+export interface LegalDoc {
+  id: string; type: string; version: number; title: string; content: string; status: 'DRAFT' | 'PUBLISHED'; effectiveAt: string | null
+  consentRequired: boolean; changeNote: string; publishedAt: string | null; publishedBy: string | null; createdAt: string; updatedAt: string
+}
+export interface LegalOverviewItem { type: string; label: string; audience: ('rider' | 'driver')[]; suggestConsent: boolean; inForce: LegalDoc | null; scheduled: LegalDoc | null; draft: LegalDoc | null; versions: number }
+export interface LegalAcceptanceCount { type: string; version: number; riders: number; drivers: number }

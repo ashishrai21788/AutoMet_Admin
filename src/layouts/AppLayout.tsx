@@ -48,6 +48,7 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/ride-settings', label: 'Ride Settings', icon: SlidersHorizontal, permission: 'dashboard.view' },
   { to: '/audit', label: 'Audit Log', icon: History, permission: 'audit.view' },
   { to: '/team', label: 'Team Management', icon: UserCog, permission: 'team.manage' },
+  { to: '/legal', label: 'Legal Documents', icon: ShieldCheck, permission: 'payments.view' },
   { to: '/settings', label: 'Business Settings', icon: Settings, permission: 'settings.manage' },
   { to: '/account', label: 'My Profile', icon: CircleUserRound },
 ]

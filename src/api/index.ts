@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -306,6 +306,15 @@ export const ops = {
     fail: (id: string, reason: string) => send<PayoutItem>('POST', `/payouts/${id}/fail`, { reason }),
     settings: () => get<PayoutSettings>('/payout-settings'),
     updateSettings: (input: { commissionPercent: number; minWithdrawal: number; cashWithdrawable: boolean; processingNote: string }) => send<PayoutSettings>('PUT', '/payout-settings', input),
+  },
+  legal: {
+    overview: () => get<{ items: LegalOverviewItem[] }>('/legal'),
+    versions: (type: string, params: Record<string, string | number | undefined>) => get<Paged<LegalDoc>>(`/legal/${type}/versions${qs(params)}`),
+    acceptances: () => get<{ items: LegalAcceptanceCount[] }>('/legal/acceptances'),
+    createDraft: (type: string, input: { title?: string; content?: string }) => send<LegalDoc>('POST', `/legal/${type}`, input),
+    update: (id: string, input: Partial<Pick<LegalDoc, 'title' | 'content' | 'consentRequired' | 'changeNote'>>) => send<LegalDoc>('PUT', `/legal/doc/${id}`, input),
+    publish: (id: string, effectiveAt?: string) => send<LegalDoc>('POST', `/legal/doc/${id}/publish`, effectiveAt ? { effectiveAt } : {}),
+    remove: (id: string) => send<{ id: string }>('DELETE', `/legal/doc/${id}`),
   },
   coupons: {
     list: (params: Record<string, string | number | undefined>) => get<Paged<CouponItem> & { currency: string }>(`/coupons${qs(params)}`),
