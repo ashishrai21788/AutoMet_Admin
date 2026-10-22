@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, PricingDraft, PricingVersionPage, PricingVersionDetail, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -194,6 +194,13 @@ export const api = {
     saveFareRule: (input: FareRuleFields & { categoryId: string; regionId: string | null }) =>
       request<FareRule>('/api/admin/business/fare-rules', { method: 'PUT', body: json(input), business: true }),
     deleteFareRule: (id: string) => request<{ id: string }>(`/api/admin/business/fare-rules/${id}`, { method: 'DELETE', business: true }),
+    pricingDraft: () => request<PricingDraft>('/api/admin/business/pricing/draft', { business: true }),
+    discardPricingDraft: (key?: string) => request<{ discarded: number }>(`/api/admin/business/pricing/draft${key ? `/${encodeURIComponent(key)}` : ''}`, { method: 'DELETE', business: true }),
+    publishPricing: (note: string) => request<{ published: number; version: number | null }>('/api/admin/business/pricing/publish', { method: 'POST', body: json({ note }), business: true }),
+    setPricingWorkflow: (mode: 'direct' | 'draft') => request<{ mode: string }>('/api/admin/business/pricing/workflow', { method: 'PUT', body: json({ mode }), business: true }),
+    pricingVersions: (page: number) => request<PricingVersionPage>(`/api/admin/business/pricing/versions?page=${page}`, { business: true }),
+    pricingVersion: (version: number) => request<PricingVersionDetail>(`/api/admin/business/pricing/versions/${version}`, { business: true }),
+    rollbackPricing: (version: number) => request<{ restoredFrom: number; version: number | null }>(`/api/admin/business/pricing/versions/${version}/rollback`, { method: 'POST', body: json({}), business: true }),
     previewFare: (rule: FareRuleFields, trip: Record<string, number | string>) =>
       request<FarePreview>('/api/admin/business/fare-preview', { method: 'POST', body: json({ rule, trip }), business: true }),
 

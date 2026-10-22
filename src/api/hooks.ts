@@ -17,6 +17,9 @@ export const useTollSettings = () => useBusinessQuery('toll-settings', api.busin
 export const useAppVersions = () => useBusinessQuery('app-versions', api.business.appVersions)
 export const useRegions = () => useBusinessQuery('regions', api.business.regions)
 export const useCategories = () => useBusinessQuery('categories', api.business.categories)
+export const usePricingDraft = () => useBusinessQuery('pricing-draft', api.business.pricingDraft)
+export const usePricingVersions = (page: number) => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'pricing-versions', page], queryFn: () => api.business.pricingVersions(page), enabled: !!tenantId, placeholderData: keepPreviousData }) }
+export const usePricingVersion = (version: number) => useBusinessQuery(`pricing-version:${version}`, () => api.business.pricingVersion(version), !!version)
 export const useFareRules = () => useBusinessQuery('fare-rules', api.business.fareRules)
 export const usePolicies = () => useBusinessQuery('policies', api.business.policies)
 

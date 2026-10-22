@@ -2,13 +2,15 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { api, ApiError } from '@/api'
-import { useBusinessMutation, useCategories, useFareRules, useOverview, usePolicies, useRegions } from '@/api/hooks'
+import { useBusinessMutation, useCategories, useFareRules, useOverview, usePolicies, usePricingDraft, useRegions } from '@/api/hooks'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import { formatMoney } from '@/lib/geo'
 import type { CancellationPolicy, Category, FarePreview, FareRule, FareRuleFields, PolicyFields, Region } from '@/lib/types'
 import DataTable, { type Column } from '@/components/DataTable'
 import SetupGuide from '@/components/SetupGuide'
+import PricingReview from '@/components/PricingReview'
+import PricingHistory from '@/components/PricingHistory'
 import { useConfirm } from '@/components/feedback'
 import { Alert, Button, Card, EmptyState, ErrorState, Field, PageHeader, Select, SelectField, Spinner, TextField, Textarea, Toggle } from '@/components/ui'
 
@@ -129,9 +131,9 @@ function PreviewPanel({ rule, errors, currency }: { rule: FareRuleFields; errors
 
 // ---------------- fare rule form ----------------
 
-function FareRuleForm({ category, regionId, existing, currency, canEdit, form, setForm }: { category: Category; regionId: string | null; existing?: FareRule; currency: string; canEdit: boolean; form: FareRuleFields; setForm: (f: FareRuleFields) => void }) {
+function FareRuleForm({ category, regionId, existing, currency, canEdit, form, setForm, draftMode, pendingRemoval }: { draftMode: boolean; pendingRemoval: boolean; category: Category; regionId: string | null; existing?: FareRule; currency: string; canEdit: boolean; form: FareRuleFields; setForm: (f: FareRuleFields) => void }) {
   const [touched, setTouched] = useState(false)
-  const save = useBusinessMutation((input: FareRuleFields) => api.business.saveFareRule({ ...input, categoryId: category.id, regionId }), { success: 'Fare rule saved' })
+  const save = useBusinessMutation((input: FareRuleFields) => api.business.saveFareRule({ ...input, categoryId: category.id, regionId }), { success: draftMode ? 'Saved as a draft. Nothing changes for riders until you publish.' : 'Fare rule saved' })
   const local = validateRule(form)
   const fe = { ...(touched ? local : {}), ...save.fieldErrors }
   const change = (next: FareRuleFields) => { setForm(next); save.reset() }
@@ -144,6 +146,7 @@ function FareRuleForm({ category, regionId, existing, currency, canEdit, form, s
         <form id="fare-form" onSubmit={submit} noValidate className="space-y-6">
           <div>
             <h2 className="font-semibold">Fare rule</h2>
+            {pendingRemoval && <p className="mt-1 text-sm text-danger">This rule is marked for removal. Saving here keeps it instead, as a draft.</p>}
             <p className="text-sm text-muted">Amounts are in <strong>{currency}</strong> (set by the operating country).</p>
           </div>
           <fieldset disabled={!canEdit} className="space-y-6">
@@ -208,7 +211,7 @@ function FareRuleForm({ category, regionId, existing, currency, canEdit, form, s
               <p className="mt-1 text-xs text-muted">The cap is stored with the rule. Automatic surge based on demand is not available yet.</p>
             </div>
           </fieldset>
-          {canEdit ? <Button type="submit" loading={save.isPending}>{existing ? 'Save changes' : 'Save fare rule'}</Button> : <p className="text-sm text-muted">Your role can view pricing but not change it.</p>}
+          {canEdit ? <Button type="submit" loading={save.isPending}>{draftMode ? 'Save as draft' : existing ? 'Save changes' : 'Save fare rule'}</Button> : <p className="text-sm text-muted">Your role can view pricing but not change it.</p>}
         </form>
       </Card>
   )
@@ -282,11 +285,13 @@ export default function Pricing() {
   const categories = useCategories()
   const regions = useRegions()
   const rules = useFareRules()
+  const pricingDraft = usePricingDraft()
   const policies = usePolicies()
   const [categoryId, setCategoryId] = useState('')
   const [scopeChoice, setScope] = useState(DEFAULT)
   const complete = useBusinessMutation(api.business.completeSetup, { success: 'Setup confirmed' })
   const remove = useBusinessMutation((id: string) => api.business.deleteFareRule(id), { success: 'Fare rule removed' })
+  const draftMode = pricingDraft.data?.mode === 'draft'
 
   const active = useMemo(() => (categories.data ?? []).filter((c) => c.active), [categories.data])
   const category = active.find((c) => c.id === categoryId) ?? active[0]
@@ -295,11 +300,16 @@ export default function Pricing() {
   const scope = scopeChoice !== DEFAULT && !scopes.some((r) => r.id === scopeChoice) ? DEFAULT : scopeChoice
 
   const regionId = scope === DEFAULT ? null : scope
-  const rule = category ? rules.data?.find((r) => r.categoryId === category.id && r.regionId === regionId) : undefined
+  const liveRule = category ? rules.data?.find((r) => r.categoryId === category.id && r.regionId === regionId) : undefined
+  const draftEntry = category ? pricingDraft.data?.drafts.find((d) => d.categoryId === category.id && d.regionId === regionId) : undefined
+  // the form starts from the pending draft when there is one, otherwise from the live rule
+  const rule: FareRule | undefined = draftEntry && draftEntry.op === 'SAVE'
+    ? { id: draftEntry.id, categoryId: draftEntry.categoryId, regionId: draftEntry.regionId, currency: draftEntry.currency, active: true, updatedAt: draftEntry.updatedAt, baseFare: draftEntry.baseFare, perKm: draftEntry.perKm, perMinute: draftEntry.perMinute, minimumFare: draftEntry.minimumFare, bookingFee: draftEntry.bookingFee, waitingFreeMinutes: draftEntry.waitingFreeMinutes, waitingPerMinute: draftEntry.waitingPerMinute, additionalCharges: draftEntry.additionalCharges, taxes: draftEntry.taxes, surge: draftEntry.surge }
+    : liveRule
   const policy = category ? policies.data?.find((p) => p.categoryId === category.id && p.regionId === regionId) : undefined
   const market = overview.data?.business.market ?? null
   const currency = market?.currency ?? ''
-  const formKey = `${category?.id}|${scope}|${rule?.id ?? 'new'}`
+  const formKey = `${category?.id}|${scope}|${rule?.id ?? 'new'}|${draftEntry?.updatedAt ?? ''}`
   const policyKey = `${category?.id}|${scope}|${policy?.id ?? 'new'}`
 
   // The page owns the fare form's values so the preview beside it always shows what is being typed. The draft is tied
@@ -318,10 +328,11 @@ export default function Pricing() {
     { header: 'Per km', cell: (r) => formatMoney(Number(r.perKm), r.currency) },
     { header: 'Per min', cell: (r) => formatMoney(Number(r.perMinute), r.currency) },
     { header: 'Minimum', cell: (r) => formatMoney(Number(r.minimumFare), r.currency) },
+    { header: 'Status', cell: (r) => { const d = pricingDraft.data?.drafts.find((x) => x.categoryId === r.categoryId && x.regionId === r.regionId); return !d ? <span className="text-muted">Live</span> : d.op === 'DELETE' ? <span className="text-danger">Removal pending</span> : <span className="text-warn">Change pending</span> } },
     { header: 'Actions', hideLabel: true, className: 'text-right', cell: (r) => (
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={() => { setCategoryId(r.categoryId); setScope(r.regionId ?? DEFAULT); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{canEdit ? 'Edit' : 'View'}</Button>
-        {canEdit && <Button variant="danger" onClick={async () => { if (await confirm({ title: 'Remove this fare rule?', message: `${nameOf(r.categoryId)} · ${scopeOf(r.regionId)} will have no price until you add a rule again.`, confirmLabel: 'Remove', danger: true })) remove.mutate(r.id) }}>Remove</Button>}
+        {canEdit && <Button variant="danger" onClick={async () => { if (await confirm({ title: 'Remove this fare rule?', message: `${draftMode ? 'This is saved as a draft and takes effect when you publish. ' : ''}${nameOf(r.categoryId)} · ${scopeOf(r.regionId)} will have no price until you add a rule again.`, confirmLabel: 'Remove', danger: true })) remove.mutate(r.id) }}>Remove</Button>}
       </div>
     ) },
   ]
@@ -334,6 +345,7 @@ export default function Pricing() {
     <>
       <PageHeader title="Pricing & Fare Rules" subtitle="Set how each vehicle category is priced, with optional overrides for individual regions." />
       <SetupGuide />
+      <PricingReview canEdit={canEdit} currency={currency} nameOf={nameOf} scopeOf={scopeOf} />
       <div className="mb-6"><Alert kind="info">Rules saved here price new ride requests for this business: the estimate a rider sees and the fare recorded on the trip. Cancellation fees are stored but not charged yet, and surge is a cap only (no automatic surge).</Alert></div>
 
       {setup.ready && !setup.complete && canEdit && (
@@ -364,7 +376,7 @@ export default function Pricing() {
 
           {category && (
             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-              <div className="lg:col-start-1 lg:row-start-1"><FareRuleForm key={formKey} category={category} regionId={regionId} existing={rule} currency={currency} canEdit={canEdit} form={form} setForm={setForm} /></div>
+              <div className="lg:col-start-1 lg:row-start-1"><FareRuleForm key={formKey} category={category} regionId={regionId} existing={rule} currency={currency} canEdit={canEdit} form={form} setForm={setForm} draftMode={draftMode} pendingRemoval={draftEntry?.op === 'DELETE'} /></div>
               <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1"><PreviewPanel rule={form} errors={validateRule(form)} currency={currency} /></div>
               <div className="lg:col-start-1 lg:row-start-2"><PolicyForm key={policyKey} category={category} regionId={regionId} existing={policy} currency={currency} canEdit={canEdit} /></div>
             </div>
@@ -376,6 +388,7 @@ export default function Pricing() {
               <DataTable rows={rules.data ?? []} columns={ruleColumns} rowKey={(r) => r.id} empty={{ title: 'No fare rules yet', text: 'Fill in the form above and save your first rule.' }} />
             )}
           </Card>
+          <PricingHistory canEdit={canEdit} currency={currency} nameOf={nameOf} scopeOf={scopeOf} />
         </>
       )}
     </>

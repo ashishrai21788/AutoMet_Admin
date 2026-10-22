@@ -164,6 +164,14 @@ export interface FareRuleFields {
   surge: { enabled: boolean; maxMultiplier: number | string }
 }
 
+export interface PricingFieldChange { field: string; from: unknown; to: unknown }
+export interface PricingChange { key: string; categoryId: string; regionId: string | null; kind: 'ADDED' | 'CHANGED' | 'REMOVED'; fields: PricingFieldChange[] }
+/** A fare rule change waiting to be published: shaped like a rule, plus whether it saves or removes one. */
+export interface PricingDraftEntry extends FareRuleFields { id: string; key: string; categoryId: string; regionId: string | null; op: 'SAVE' | 'DELETE'; currency: string; updatedAt: string; by: string | null }
+export interface PricingDraft { mode: 'direct' | 'draft'; drafts: PricingDraftEntry[]; changes: PricingChange[]; stale: string[] }
+export interface PricingVersionItem { version: number; at: string; by: string | null; source: string; note: string; summary: { added: number; changed: number; removed: number } | null; rollbackOf: number | null }
+export interface PricingVersionPage { items: PricingVersionItem[]; total: number; page: number; pageSize: number; current: number | null }
+export interface PricingVersionDetail extends PricingVersionItem { changes: PricingChange[]; comparedToNow: PricingChange[] }
 export interface FareRule extends FareRuleFields {
   id: string
   categoryId: string
