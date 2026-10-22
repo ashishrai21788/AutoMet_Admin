@@ -79,6 +79,11 @@ export default function TripDetail() {
                   {t.fareDetail.toll > 0 && <Row label='Toll (paid by the driver, repaid by the rider)'>{fmtMoney(t.fareDetail.toll, t.currency)}</Row>}
                   {t.fareDetail.toll > 0 && t.fareDetail.totalPaid !== null && <div className='flex justify-between gap-4 py-2 text-sm font-semibold'><dt>Total paid by the rider</dt><dd>{fmtMoney(t.fareDetail.totalPaid, t.currency)}</dd></div>}
                 </dl>
+                {(t.fareDetail.pricingVersion !== null || t.fareDetail.taxBasis.length > 0) && (
+                  <p className="mt-2 text-xs text-muted">
+                    Priced with {t.fareDetail.pricingVersion !== null ? `pricing version ${t.fareDetail.pricingVersion}` : 'the pricing live at the time'}{t.fareDetail.taxBasis.length > 0 ? `; taxes charged: ${t.fareDetail.taxBasis.map((x) => `${x.name} ${x.ratePercent}%`).join(', ')}` : ''}.
+                  </p>
+                )}
                 <p className="mt-2 text-xs text-muted">
                   {legacy ? 'Priced with the platform\'s built-in tariff, not this business\'s own fare rules.' : t.fareDetail.source === 'BUSINESS_RULES' ? 'Priced with this business\'s fare rules when the ride was requested.' : ''}
                   {t.fareDetail.basis === 'ESTIMATE' ? ' This is the estimate shown to the rider; a final fare is not recorded yet.' : ''}

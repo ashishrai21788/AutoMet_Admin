@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, PricingDraft, PricingVersionPage, PricingVersionDetail, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, PricingDraft, PricingVersionPage, PricingVersionDetail, PricingSchedules, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -196,7 +196,9 @@ export const api = {
     deleteFareRule: (id: string) => request<{ id: string }>(`/api/admin/business/fare-rules/${id}`, { method: 'DELETE', business: true }),
     pricingDraft: () => request<PricingDraft>('/api/admin/business/pricing/draft', { business: true }),
     discardPricingDraft: (key?: string) => request<{ discarded: number }>(`/api/admin/business/pricing/draft${key ? `/${encodeURIComponent(key)}` : ''}`, { method: 'DELETE', business: true }),
-    publishPricing: (note: string) => request<{ published: number; version: number | null }>('/api/admin/business/pricing/publish', { method: 'POST', body: json({ note }), business: true }),
+    publishPricing: (note: string, effectiveAt?: string) => request<{ published?: number; scheduled?: boolean; scheduleId?: string; version: number | null }>('/api/admin/business/pricing/publish', { method: 'POST', body: json({ note, ...(effectiveAt ? { effectiveAt } : {}) }), business: true }),
+    pricingSchedules: () => request<PricingSchedules>('/api/admin/business/pricing/schedules', { business: true }),
+    cancelPricingSchedule: (id: string) => request<{ cancelled: string; restoredAsDrafts: number }>(`/api/admin/business/pricing/schedules/${id}/cancel`, { method: 'POST', body: json({}), business: true }),
     setPricingWorkflow: (mode: 'direct' | 'draft') => request<{ mode: string }>('/api/admin/business/pricing/workflow', { method: 'PUT', body: json({ mode }), business: true }),
     pricingVersions: (page: number) => request<PricingVersionPage>(`/api/admin/business/pricing/versions?page=${page}`, { business: true }),
     pricingVersion: (version: number) => request<PricingVersionDetail>(`/api/admin/business/pricing/versions/${version}`, { business: true }),

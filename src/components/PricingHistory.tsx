@@ -8,7 +8,7 @@ import Modal from '@/components/Modal'
 import { ChangeRow } from '@/components/PricingReview'
 import { Badge, Button, Card, EmptyState, ErrorState, Spinner } from '@/components/ui'
 
-const SOURCE: Record<string, string> = { baseline: 'Starting point (before changes were recorded)', publish: 'Published', direct: 'Saved', rollback: 'Went back' }
+const SOURCE: Record<string, string> = { baseline: 'Starting point (before changes were recorded)', publish: 'Published', scheduled: 'Published on schedule', direct: 'Saved', rollback: 'Went back' }
 
 function Detail({ version, current, canEdit, currency, nameOf, scopeOf, onClose }: { version: number; current: number | null; canEdit: boolean; currency: string; nameOf: (id: string) => string; scopeOf: (r: string | null) => string; onClose: () => void }) {
   const q = usePricingVersion(version)

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '@/api'
-import { usePricingDraft, useBusinessMutation } from '@/api/hooks'
+import { usePricingDraft, usePricingSchedules, useBusinessMutation } from '@/api/hooks'
+import { fmtDateTime } from '@/lib/labels'
 import { FIELD_LABEL, showValue } from '@/lib/pricingLabels'
 import type { PricingChange, PricingFieldChange } from '@/lib/types'
 import { useConfirm, useToast } from '@/components/feedback'
@@ -41,6 +42,9 @@ export function ChangeRow({ change, name, scope, currency, onDiscard }: { change
  */
 export default function PricingReview({ canEdit, currency, nameOf, scopeOf }: { canEdit: boolean; currency: string; nameOf: (categoryId: string) => string; scopeOf: (regionId: string | null) => string }) {
   const q = usePricingDraft()
+  const sched = usePricingSchedules()
+  const [when, setWhen] = useState<'now' | 'later'>('now')
+  const [at, setAt] = useState('')
   const toast = useToast()
   const confirm = useConfirm()
   const qc = useQueryClient()
@@ -97,14 +101,39 @@ export default function PricingReview({ canEdit, currency, nameOf, scopeOf }: { 
         </Card>
       )}
 
+      {sched.data && (sched.data.waiting.length > 0 || sched.data.recent.some((r) => r.status === 'FAILED')) && (
+        <Card className="mb-6 overflow-hidden">
+          <div className="border-b border-line p-4"><h2 className="font-semibold">Scheduled pricing changes</h2><p className="text-sm text-muted">Applied automatically at the time shown, within about a minute.</p></div>
+          <ul className="divide-y divide-line text-sm">
+            {[...sched.data.waiting, ...sched.data.recent.filter((r) => r.status === 'FAILED')].map((x) => (
+              <li key={x.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <Badge kind={x.status === 'FAILED' ? 'bad' : 'warn'}>{x.status === 'FAILED' ? 'Failed' : x.status === 'APPLYING' ? 'Applying' : 'Scheduled'}</Badge>
+                <span className="min-w-0 flex-1">
+                  <span className="block">{fmtDateTime(x.effectiveAt)} · {x.items} rule{x.items === 1 ? '' : 's'}{x.summary ? ` (${[x.summary.added && `${x.summary.added} new`, x.summary.changed && `${x.summary.changed} changed`, x.summary.removed && `${x.summary.removed} removed`].filter(Boolean).join(', ')})` : ''}</span>
+                  <span className="block text-xs text-muted">{x.by ?? ''}{x.note ? ` · “${x.note}”` : ''}</span>
+                  {x.failure && <span className="block text-xs text-danger">Not applied: {x.failure}</span>}
+                </span>
+                {canEdit && x.status === 'SCHEDULED' && <Button variant="ghost" disabled={busy} onClick={async () => { if (await confirm({ title: 'Cancel this scheduled change?', message: 'Nothing is lost: the changes come back as drafts you can edit, publish or schedule again.', confirmLabel: 'Cancel schedule' })) run(() => api.business.cancelPricingSchedule(x.id), 'Schedule cancelled, changes are drafts again') }}>Cancel</Button>}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {publishing && (
         <Modal title="Publish pricing changes" onClose={() => setPublishing(false)}>
           <div className="space-y-4">
-            <p className="text-sm">{d.changes.length} change{d.changes.length === 1 ? '' : 's'} go live for new ride requests right away. Rides already booked keep the fare they were quoted. You can go back to the earlier pricing from the history below.</p>
+            <p className="text-sm">{d.changes.length} change{d.changes.length === 1 ? '' : 's'} {when === 'now' ? 'go live for new ride requests right away.' : 'are applied together at the time you choose.'} Rides already booked keep the fare they were quoted. You can go back to the earlier pricing from the history below.</p>
+            <fieldset className="space-y-2 text-sm">
+              <legend className="mb-1 font-medium">When</legend>
+              <label className="flex items-center gap-2"><input type="radio" name="when" checked={when === 'now'} onChange={() => setWhen('now')} /> Publish now</label>
+              <label className="flex items-center gap-2"><input type="radio" name="when" checked={when === 'later'} onChange={() => setWhen('later')} /> At a date and time</label>
+              {when === 'later' && <Field label="Goes live at" hint="Your computer's time zone. At least 2 minutes from now.">{(p) => <input {...p} type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />}</Field>}
+            </fieldset>
             <Field label="Note (optional)" hint="Shown in the pricing history, for example why prices changed.">{(p) => <input {...p} value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />}</Field>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setPublishing(false)}>Cancel</Button>
-              <Button loading={busy} onClick={async () => { await run(() => api.business.publishPricing(note.trim()), 'Pricing published'); setPublishing(false); setNote('') }}>Publish now</Button>
+              <Button loading={busy} disabled={when === 'later' && !at} onClick={async () => { const iso = when === 'later' ? new Date(at).toISOString() : undefined; await run(() => api.business.publishPricing(note.trim(), iso), when === 'later' ? 'Scheduled. It goes live automatically at the time you chose.' : 'Pricing published'); setPublishing(false); setNote(''); setWhen('now'); setAt('') }}>{when === 'later' ? 'Schedule' : 'Publish now'}</Button>
             </div>
           </div>
         </Modal>

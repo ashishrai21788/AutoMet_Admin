@@ -169,6 +169,8 @@ export interface PricingChange { key: string; categoryId: string; regionId: stri
 /** A fare rule change waiting to be published: shaped like a rule, plus whether it saves or removes one. */
 export interface PricingDraftEntry extends FareRuleFields { id: string; key: string; categoryId: string; regionId: string | null; op: 'SAVE' | 'DELETE'; currency: string; updatedAt: string; by: string | null }
 export interface PricingDraft { mode: 'direct' | 'draft'; drafts: PricingDraftEntry[]; changes: PricingChange[]; stale: string[] }
+export interface PricingScheduleItem { id: string; effectiveAt: string; note: string; status: 'SCHEDULED' | 'APPLYING' | 'DONE' | 'FAILED' | 'CANCELLED'; summary: { added: number; changed: number; removed: number } | null; by: string | null; appliedAt: string | null; version: number | null; failure: string; items: number }
+export interface PricingSchedules { waiting: PricingScheduleItem[]; recent: PricingScheduleItem[] }
 export interface PricingVersionItem { version: number; at: string; by: string | null; source: string; note: string; summary: { added: number; changed: number; removed: number } | null; rollbackOf: number | null }
 export interface PricingVersionPage { items: PricingVersionItem[]; total: number; page: number; pageSize: number; current: number | null }
 export interface PricingVersionDetail extends PricingVersionItem { changes: PricingChange[]; comparedToNow: PricingChange[] }
@@ -504,7 +506,7 @@ export interface TripDetail extends TripItem {
   region: { id: string; name: string } | null
   category: { id: string; name: string } | null
   note: string
-  fareDetail: { toll: number; discount: number; couponCode: string | null; totalPaid: number | null; amount: number | null; currency: string | null; basis: string | null; source: string | null; breakdown: unknown; estimatedDurationMin: number | null }
+  fareDetail: { pricingVersion: number | null; taxBasis: { name: string; ratePercent: number; appliesTo: string }[]; toll: number; discount: number; couponCode: string | null; totalPaid: number | null; amount: number | null; currency: string | null; basis: string | null; source: string | null; breakdown: unknown; estimatedDurationMin: number | null }
   cancellation: { by: string | null; stage: string | null; reason: string; at: string | null } | null
   rejectReason: string
   timeline: { label: string; at: string }[]
