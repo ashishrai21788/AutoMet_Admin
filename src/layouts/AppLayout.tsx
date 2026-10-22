@@ -46,6 +46,7 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/support', label: 'Support', icon: LifeBuoy, permission: 'support.manage' },
   { to: '/alerts', label: 'Alerts', icon: Bell, permission: 'dashboard.view' },
   { to: '/ride-settings', label: 'Ride Settings', icon: SlidersHorizontal, permission: 'dashboard.view' },
+  { to: '/config-history', label: 'Settings History', icon: Layers, permission: 'dashboard.view' },
   { to: '/audit', label: 'Audit Log', icon: History, permission: 'audit.view' },
   { to: '/team', label: 'Team Management', icon: UserCog, permission: 'team.manage' },
   { to: '/legal', label: 'Legal Documents', icon: ShieldCheck, permission: 'payments.view' },

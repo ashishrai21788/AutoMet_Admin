@@ -852,6 +852,10 @@ export interface PayoutPage extends Paged<PayoutItem> {
 
 /** The smallest build of an app that may still be used; older builds are told to update. 0 means no minimum. */
 export interface AppVersionPolicy { minVersionCode: number; message: string; storeUrl: string }
+export interface ConfigChange { group: string; label: string; field: string; from: unknown; to: unknown }
+export interface ConfigVersionItem { version: number; at: string; by: string | null; source: string; changed: string[]; rollbackOf: number | null }
+export interface ConfigHistoryPage { items: ConfigVersionItem[]; total: number; page: number; pageSize: number; current: number | null }
+export interface ConfigVersionDetail extends ConfigVersionItem { changes: ConfigChange[]; comparedToNow: ConfigChange[] }
 export interface TollSettings { enabled: boolean; maxToll: number; currency: string }
 export interface AppVersions { rider: AppVersionPolicy; driver: AppVersionPolicy; defaultMessage?: string }
 export interface PayoutSettings { commissionPercent: number; minWithdrawal: number; cashWithdrawable: boolean; processingNote: string; currency: string }

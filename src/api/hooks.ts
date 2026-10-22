@@ -11,6 +11,8 @@ export function useBusinessQuery<T>(name: string, fn: () => Promise<T>, enabled 
 }
 
 export const useOverview = () => useBusinessQuery('overview', api.business.overview)
+export const useConfigHistory = (page: number) => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'config-history', page], queryFn: () => ops.configHistory.list(page), enabled: !!tenantId, placeholderData: keepPreviousData }) }
+export const useConfigVersion = (version: number) => useBusinessQuery(`config-version:${version}`, () => ops.configHistory.get(version), !!version)
 export const useTollSettings = () => useBusinessQuery('toll-settings', api.business.tollSettings)
 export const useAppVersions = () => useBusinessQuery('app-versions', api.business.appVersions)
 export const useRegions = () => useBusinessQuery('regions', api.business.regions)
