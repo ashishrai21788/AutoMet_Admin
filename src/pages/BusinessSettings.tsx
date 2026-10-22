@@ -1,14 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '@/api'
-import { useAppVersions, useBusinessMutation, useGeo, useOverview } from '@/api/hooks'
+import { useAppVersions, useTollSettings, useBusinessMutation, useGeo, useOverview } from '@/api/hooks'
 import { useConfirm } from '@/components/feedback'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import { countryName } from '@/lib/geo'
 import type { AppVersionPolicy, AppVersions, Business } from '@/lib/types'
 import RequirementsCard from '@/components/RequirementsCard'
-import { Badge, Button, Card, ErrorState, PageHeader, Spinner, TextField } from '@/components/ui'
+import { Badge, Button, Card, ErrorState, PageHeader, Spinner, TextField, Toggle } from '@/components/ui'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_RE = /^\+?[0-9 ()-]{6,20}$/
@@ -116,6 +116,39 @@ function AppVersionsCard({ canEdit }: { canEdit: boolean }) {
   )
 }
 
+/** Whether drivers may enter a toll when ending a trip, and the most they may enter. The rider pays it back on top of the fare and the driver receives all of it. */
+function TollsCard({ canEdit }: { canEdit: boolean }) {
+  const current = useTollSettings()
+  const [form, setForm] = useState<{ enabled: boolean; maxToll: string } | null>(null)
+  const save = useBusinessMutation((v: { enabled: boolean; maxToll: number }) => api.business.updateTollSettings(v), { success: 'Toll settings saved', onSuccess: () => setForm(null) })
+  if (current.isLoading) return <Card className="mt-6 p-5"><Spinner /></Card>
+  if (current.isError) return <Card className="mt-6 p-5"><ErrorState error={current.error} onRetry={() => current.refetch()} /></Card>
+  const saved = current.data!
+  const v = form ?? { enabled: saved.enabled, maxToll: saved.maxToll ? String(saved.maxToll) : '' }
+  const change = (next: { enabled: boolean; maxToll: string }) => { setForm(next); save.reset() }
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    save.mutate({ enabled: v.enabled, maxToll: v.maxToll.trim() === '' ? 0 : Number(v.maxToll) })
+  }
+
+  return (
+    <Card className="mt-6 p-5">
+      <h2 className="font-semibold">Tolls</h2>
+      <p className="mb-4 mt-1 text-sm text-muted">When on, the driver app asks for the toll paid when a trip is ended. The rider pays it back on top of the fare, the driver receives all of it, and no coupon or commission applies to it. A toll above the limit below is refused.</p>
+      <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
+        <fieldset disabled={!canEdit || save.isPending} className="contents">
+          <div className="sm:col-span-2"><Toggle label="Drivers can enter a toll when ending a trip" checked={v.enabled} onChange={(on) => change({ ...v, enabled: on })} /></div>
+          <TextField label={`Most a driver may enter for one trip (${saved.currency})`} inputMode="decimal" value={v.maxToll} placeholder="For example 500" onChange={(e) => change({ ...v, maxToll: e.target.value })} error={save.fieldErrors.maxToll} />
+        </fieldset>
+        <div className="sm:col-span-2">
+          {canEdit ? <Button type="submit" loading={save.isPending} disabled={!form}>Save toll settings</Button> : <p className="text-sm text-muted">Your role can view these settings but not change them.</p>}
+        </div>
+      </form>
+    </Card>
+  )
+}
+
 function SettingsForm({ business, canEdit }: { business: Business; canEdit: boolean }) {
   const [form, setForm] = useState({ name: business.name, appName: business.appName, brandColor: business.brandColor, supportEmail: business.supportEmail, supportPhone: business.supportPhone })
   const [touched, setTouched] = useState(false)
@@ -183,6 +216,8 @@ export default function BusinessSettings() {
 
       <LogoCard business={b} canEdit={canEdit} />
       <SettingsForm business={b} canEdit={canEdit} />
+
+      <TollsCard canEdit={canEdit} />
 
       <AppVersionsCard canEdit={canEdit} />
 

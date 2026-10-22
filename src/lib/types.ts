@@ -496,7 +496,7 @@ export interface TripDetail extends TripItem {
   region: { id: string; name: string } | null
   category: { id: string; name: string } | null
   note: string
-  fareDetail: { amount: number | null; currency: string | null; basis: string | null; source: string | null; breakdown: unknown; estimatedDurationMin: number | null }
+  fareDetail: { toll: number; discount: number; couponCode: string | null; totalPaid: number | null; amount: number | null; currency: string | null; basis: string | null; source: string | null; breakdown: unknown; estimatedDurationMin: number | null }
   cancellation: { by: string | null; stage: string | null; reason: string; at: string | null } | null
   rejectReason: string
   timeline: { label: string; at: string }[]
@@ -852,6 +852,7 @@ export interface PayoutPage extends Paged<PayoutItem> {
 
 /** The smallest build of an app that may still be used; older builds are told to update. 0 means no minimum. */
 export interface AppVersionPolicy { minVersionCode: number; message: string; storeUrl: string }
+export interface TollSettings { enabled: boolean; maxToll: number; currency: string }
 export interface AppVersions { rider: AppVersionPolicy; driver: AppVersionPolicy; defaultMessage?: string }
 export interface PayoutSettings { commissionPercent: number; minWithdrawal: number; cashWithdrawable: boolean; processingNote: string; currency: string }
 

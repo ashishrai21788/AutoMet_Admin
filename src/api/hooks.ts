@@ -11,6 +11,7 @@ export function useBusinessQuery<T>(name: string, fn: () => Promise<T>, enabled 
 }
 
 export const useOverview = () => useBusinessQuery('overview', api.business.overview)
+export const useTollSettings = () => useBusinessQuery('toll-settings', api.business.tollSettings)
 export const useAppVersions = () => useBusinessQuery('app-versions', api.business.appVersions)
 export const useRegions = () => useBusinessQuery('regions', api.business.regions)
 export const useCategories = () => useBusinessQuery('categories', api.business.categories)

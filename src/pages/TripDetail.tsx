@@ -74,7 +74,10 @@ export default function TripDetail() {
                   {lines.map((l) => <Row key={l.label} label={l.label}>{fmtMoney(l.amount, t.currency)}</Row>)}
                   {fees.map((l) => <Row key={l.label} label={l.label}>{fmtMoney(l.amount, t.currency)}</Row>)}
                   {taxes.map((l) => <Row key={l.label} label={l.label}>{fmtMoney(l.amount, t.currency)}</Row>)}
+                  {t.fareDetail.discount > 0 && <Row label={t.fareDetail.couponCode ? `Coupon discount (${t.fareDetail.couponCode})` : 'Coupon discount'}>{`−${fmtMoney(t.fareDetail.discount, t.currency)}`}</Row>}
                   <div className="flex justify-between gap-4 py-2 text-sm font-semibold"><dt>{t.fareDetail.basis === 'ACTUAL' ? 'Final fare' : 'Estimated fare'}</dt><dd>{fmtMoney(t.fareDetail.amount, t.currency)}</dd></div>
+                  {t.fareDetail.toll > 0 && <Row label='Toll (paid by the driver, repaid by the rider)'>{fmtMoney(t.fareDetail.toll, t.currency)}</Row>}
+                  {t.fareDetail.toll > 0 && t.fareDetail.totalPaid !== null && <div className='flex justify-between gap-4 py-2 text-sm font-semibold'><dt>Total paid by the rider</dt><dd>{fmtMoney(t.fareDetail.totalPaid, t.currency)}</dd></div>}
                 </dl>
                 <p className="mt-2 text-xs text-muted">
                   {legacy ? 'Priced with the platform\'s built-in tariff, not this business\'s own fare rules.' : t.fareDetail.source === 'BUSINESS_RULES' ? 'Priced with this business\'s fare rules when the ride was requested.' : ''}
