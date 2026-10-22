@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '@/api'
-import { useBusinessMutation, useGeo, useOverview } from '@/api/hooks'
+import { useAppVersions, useBusinessMutation, useGeo, useOverview } from '@/api/hooks'
+import { useConfirm } from '@/components/feedback'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import { countryName } from '@/lib/geo'
-import type { Business } from '@/lib/types'
+import type { AppVersionPolicy, AppVersions, Business } from '@/lib/types'
 import RequirementsCard from '@/components/RequirementsCard'
 import { Badge, Button, Card, ErrorState, PageHeader, Spinner, TextField } from '@/components/ui'
 
@@ -56,6 +57,61 @@ function LogoCard({ business, canEdit }: { business: Business; canEdit: boolean 
           {fileError && <p role="alert" className="text-sm text-danger">{fileError}</p>}
         </div>
       </div>
+    </Card>
+  )
+}
+
+const policyEmpty: AppVersionPolicy = { minVersionCode: 0, message: '', storeUrl: '' }
+
+/** The smallest build of the rider and driver apps that may still be used. Apps below it show an update screen and cannot be used. */
+function AppVersionsCard({ canEdit }: { canEdit: boolean }) {
+  const current = useAppVersions()
+  const confirm = useConfirm()
+  const [form, setForm] = useState<{ rider: AppVersionPolicy; driver: AppVersionPolicy } | null>(null)
+  const save = useBusinessMutation((v: AppVersions) => api.business.updateAppVersions(v), { success: 'App versions saved', onSuccess: () => setForm(null) })
+
+  if (current.isLoading) return <Card className="mt-6 p-5"><Spinner /></Card>
+  if (current.isError) return <Card className="mt-6 p-5"><ErrorState error={current.error} onRetry={() => current.refetch()} /></Card>
+  const saved = current.data!
+  const v = form ?? { rider: saved.rider ?? policyEmpty, driver: saved.driver ?? policyEmpty }
+  const set = (app: 'rider' | 'driver', key: keyof AppVersionPolicy, value: string) => { setForm({ ...v, [app]: { ...v[app], [key]: key === 'minVersionCode' ? Number(value.replace(/\D/g, '')) || 0 : value } }); save.reset() }
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    const raised = (['rider', 'driver'] as const).filter((a) => v[a].minVersionCode > (saved[a]?.minVersionCode ?? 0))
+    if (raised.length) {
+      const ok = await confirm({
+        title: 'Block older app versions?',
+        message: `Everyone using a ${raised.join(' or ')} app build older than the number you entered will see an update screen and cannot use the app until they update. Make sure that build is already published in the store.`,
+        confirmLabel: 'Save and block', danger: true,
+      })
+      if (!ok) return
+    }
+    save.mutate({ rider: v.rider, driver: v.driver })
+  }
+
+  const block = (app: 'rider' | 'driver', title: string) => (
+    <div className="space-y-3">
+      <h3 className="text-sm font-medium">{title}</h3>
+      <TextField label="Smallest allowed build number" inputMode="numeric" value={String(v[app].minVersionCode || '')} placeholder="0 = no minimum" onChange={(e) => set(app, 'minVersionCode', e.target.value)} error={save.fieldErrors[`${app}.minVersionCode`]} hint="The app's build number (version code) shown in the Play Console." />
+      <TextField label="Message (optional)" value={v[app].message} maxLength={200} placeholder={saved.defaultMessage} onChange={(e) => set(app, 'message', e.target.value)} error={save.fieldErrors[`${app}.message`]} />
+      <TextField label="Update link (optional)" type="url" value={v[app].storeUrl} placeholder="https://play.google.com/store/apps/details?id=..." onChange={(e) => set(app, 'storeUrl', e.target.value)} error={save.fieldErrors[`${app}.storeUrl`]} hint="Leave empty to open the app's own Play Store page." />
+    </div>
+  )
+
+  return (
+    <Card className="mt-6 p-5">
+      <h2 className="font-semibold">App versions</h2>
+      <p className="mb-4 mt-1 text-sm text-muted">Stop old builds of your apps from being used, for example after a fix that older versions cannot work with. Builds below the number you set see an update screen. Leave 0 for no minimum.</p>
+      <form onSubmit={submit} noValidate className="grid gap-6 sm:grid-cols-2">
+        <fieldset disabled={!canEdit || save.isPending} className="contents">
+          {block('rider', 'Rider app')}
+          {block('driver', 'Driver app')}
+        </fieldset>
+        <div className="sm:col-span-2">
+          {canEdit ? <Button type="submit" loading={save.isPending} disabled={!form}>Save app versions</Button> : <p className="text-sm text-muted">Your role can view these settings but not change them.</p>}
+        </div>
+      </form>
     </Card>
   )
 }
@@ -127,6 +183,8 @@ export default function BusinessSettings() {
 
       <LogoCard business={b} canEdit={canEdit} />
       <SettingsForm business={b} canEdit={canEdit} />
+
+      <AppVersionsCard canEdit={canEdit} />
 
       <RequirementsCard canEdit={canEdit} />
 

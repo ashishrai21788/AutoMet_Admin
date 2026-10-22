@@ -850,6 +850,9 @@ export interface PayoutPage extends Paged<PayoutItem> {
   totals: Record<PayoutStatus, { count: number; amount: number }>
 }
 
+/** The smallest build of an app that may still be used; older builds are told to update. 0 means no minimum. */
+export interface AppVersionPolicy { minVersionCode: number; message: string; storeUrl: string }
+export interface AppVersions { rider: AppVersionPolicy; driver: AppVersionPolicy; defaultMessage?: string }
 export interface PayoutSettings { commissionPercent: number; minWithdrawal: number; cashWithdrawable: boolean; processingNote: string; currency: string }
 
 export interface IncentiveItem {
