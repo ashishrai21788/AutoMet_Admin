@@ -17,6 +17,7 @@ export const useTollSettings = () => useBusinessQuery('toll-settings', api.busin
 export const useAppVersions = () => useBusinessQuery('app-versions', api.business.appVersions)
 export const useRegions = () => useBusinessQuery('regions', api.business.regions)
 export const useCategories = () => useBusinessQuery('categories', api.business.categories)
+export const useSurge = () => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'surge'], queryFn: api.business.surge, enabled: !!tenantId, refetchInterval: 30000 }) }
 export const usePricingDraft = () => useBusinessQuery('pricing-draft', api.business.pricingDraft)
 export const usePricingSchedules = () => useBusinessQuery('pricing-schedules', api.business.pricingSchedules)
 export const usePricingVersions = (page: number) => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'pricing-versions', page], queryFn: () => api.business.pricingVersions(page), enabled: !!tenantId, placeholderData: keepPreviousData }) }

@@ -10,6 +10,7 @@ import type { CancellationPolicy, Category, FarePreview, FareRule, FareRuleField
 import DataTable, { type Column } from '@/components/DataTable'
 import SetupGuide from '@/components/SetupGuide'
 import PricingReview from '@/components/PricingReview'
+import SurgePanel from '@/components/SurgePanel'
 import PricingHistory from '@/components/PricingHistory'
 import { useConfirm } from '@/components/feedback'
 import { Alert, Button, Card, EmptyState, ErrorState, Field, PageHeader, Select, SelectField, Spinner, TextField, Textarea, Toggle } from '@/components/ui'
@@ -208,7 +209,7 @@ function FareRuleForm({ category, regionId, existing, currency, canEdit, form, s
                 <Toggle label="Allow surge pricing" checked={form.surge.enabled} onChange={(v) => change({ ...form, surge: { ...form.surge, enabled: v } })} />
                 {form.surge.enabled && <TextField label="Maximum multiplier" type="number" min={1} max={10} step={0.1} value={form.surge.maxMultiplier} error={fe['surge.maxMultiplier']} onChange={(e) => change({ ...form, surge: { ...form.surge, maxMultiplier: e.target.value } })} hint="Check your local regulations for the legal cap" />}
               </div>
-              <p className="mt-1 text-xs text-muted">The cap is stored with the rule. Automatic surge based on demand is not available yet.</p>
+              <p className="mt-1 text-xs text-muted">The most the ride charge may be multiplied. The multiplier itself follows demand: many riders near a pickup and few free drivers.</p>
             </div>
           </fieldset>
           {canEdit ? <Button type="submit" loading={save.isPending}>{draftMode ? 'Save as draft' : existing ? 'Save changes' : 'Save fare rule'}</Button> : <p className="text-sm text-muted">Your role can view pricing but not change it.</p>}
@@ -345,8 +346,9 @@ export default function Pricing() {
     <>
       <PageHeader title="Pricing & Fare Rules" subtitle="Set how each vehicle category is priced, with optional overrides for individual regions." />
       <SetupGuide />
+      <SurgePanel canEdit={canEdit} />
       <PricingReview canEdit={canEdit} currency={currency} nameOf={nameOf} scopeOf={scopeOf} />
-      <div className="mb-6"><Alert kind="info">Rules saved here price new ride requests for this business: the estimate a rider sees and the fare recorded on the trip. Cancellation fees are stored but not charged yet, and surge is a cap only (no automatic surge).</Alert></div>
+      <div className="mb-6"><Alert kind="info">Rules saved here price new ride requests for this business: the estimate a rider sees and the fare recorded on the trip. Cancellation fees are stored but not charged yet, and surge follows demand within the cap you set on the rule.</Alert></div>
 
       {setup.ready && !setup.complete && canEdit && (
         <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 border-ok/50 p-4">
