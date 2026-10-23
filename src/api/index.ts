@@ -365,6 +365,7 @@ export const ops = {
     list: (params: Record<string, string | number | undefined>) => get<Paged<TripItem>>(`/trips${qs(params)}`),
     get: (id: string) => get<TripDetail>(`/trips/${id}`),
     cancel: (id: string, reason: string) => send<{ id: string; status: string }>('POST', `/trips/${id}/cancel`, { reason }),
+    waiveDriverPenalty: (id: string, reason: string) => send<{ waived: boolean }>('POST', `/trips/${id}/waive-driver-penalty`, { reason }),
   },
 }
 

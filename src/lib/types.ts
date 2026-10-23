@@ -509,6 +509,7 @@ export interface TripDetail extends TripItem {
   note: string
   fareDetail: { pricingVersion: number | null; taxBasis: { name: string; ratePercent: number; appliesTo: string }[]; toll: number; discount: number; couponCode: string | null; totalPaid: number | null; amount: number | null; currency: string | null; basis: string | null; source: string | null; breakdown: unknown; estimatedDurationMin: number | null }
   cancellation: { by: string | null; stage: string | null; reason: string; at: string | null } | null
+  driverPenalty: { amount: number; currency: string; waived: boolean; waivedAt: string | null; waivedBy: string | null; reason: string } | null
   rejectReason: string
   timeline: { label: string; at: string }[]
   events: { event: string; at: string }[]
@@ -891,7 +892,7 @@ export interface IncentiveItem {
 }
 export interface IncentiveInput { name: string; description?: string; targetTrips: number; bonus: number; startsAt: string; endsAt: string; categoryId: string | null; active: boolean }
 
-export interface AdjustmentItem { id: string; driverId: string; driverName: string; kind: 'INCENTIVE' | 'ADJUSTMENT' | 'PENALTY'; amount: number; title: string; reason: string; at: string; by: string }
+export interface AdjustmentItem { id: string; driverId: string; driverName: string; kind: 'INCENTIVE' | 'ADJUSTMENT' | 'PENALTY' | 'PENALTY_WAIVER'; amount: number; title: string; reason: string; at: string; by: string }
 
 export interface CouponItem {
   id: string

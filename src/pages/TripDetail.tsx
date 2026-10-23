@@ -27,6 +27,7 @@ export default function TripDetail() {
   const trip = useTrip(id)
   const qc = useQueryClient()
   const [cancelling, setCancelling] = useState(false)
+  const [waiving, setWaiving] = useState(false)
 
   if (trip.isLoading) return <Spinner />
   if (trip.isError) return <ErrorState error={trip.error} onRetry={() => trip.refetch()} />
@@ -40,6 +41,14 @@ export default function TripDetail() {
     <>
       <Link to="/trips" className="mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><ArrowLeft size={15} aria-hidden /> All trips</Link>
       <PageHeader title={`Trip ${t.id}`} subtitle={`Requested ${fmtDateTime(t.requestedAt)}`} action={<div className="flex items-center gap-2"><TripStatusBadge status={t.status} cancelledBy={t.cancelledBy} />{can(user, 'trips.manage') && OPEN.includes(t.status) && <Button variant="danger" onClick={() => setCancelling(true)}>Cancel trip</Button>}</div>} />
+      {waiving && t.driverPenalty && (
+        <ReasonModal
+          title={`Waive the ${fmtMoney(t.driverPenalty.amount, t.driverPenalty.currency)} penalty?`} confirmLabel="Waive the penalty" label="Reason" successText="Penalty waived"
+          intro={<>The amount goes back to the driver's earnings at once. It can only be waived once. The reason is shown here and recorded in the audit log.</>}
+          onSubmit={async (reason) => { await ops.trips.waiveDriverPenalty(t.id, reason); await qc.invalidateQueries({ queryKey: ['biz'] }) }}
+          onClose={() => setWaiving(false)}
+        />
+      )}
       {cancelling && (
         <ReasonModal
           title={`Cancel trip ${t.id}?`} confirmLabel="Cancel the trip" label="Reason" successText="Trip cancelled"
@@ -126,6 +135,18 @@ export default function TripDetail() {
                 <Row label="When">{fmtDateTime(t.cancellation.at)}</Row>
                 <Row label="Reason">{t.cancellation.reason || '—'}</Row>
               </dl>
+            </Card>
+          )}
+          {t.driverPenalty && (
+            <Card className="p-5">
+              <h2 className="mb-3 font-semibold">Driver cancellation penalty</h2>
+              <dl className="divide-y divide-line">
+                <Row label="Amount">{fmtMoney(t.driverPenalty.amount, t.driverPenalty.currency)}</Row>
+                <Row label="Status">{t.driverPenalty.waived ? <Badge kind="ok">Waived</Badge> : <Badge kind="warn">Taken from the driver</Badge>}</Row>
+                {t.driverPenalty.waived && <Row label="Waived by">{t.driverPenalty.waivedBy ?? '—'} · {fmtDateTime(t.driverPenalty.waivedAt)}</Row>}
+                {t.driverPenalty.waived && <Row label="Reason">{t.driverPenalty.reason || '—'}</Row>}
+              </dl>
+              {!t.driverPenalty.waived && can(user, 'payments.manage') && <div className="mt-3 flex justify-end"><Button variant="ghost" onClick={() => setWaiving(true)}>Waive the penalty</Button></div>}
             </Card>
           )}
           {t.rejectReason && <Card className="p-5"><h2 className="mb-2 font-semibold">Driver's reason for declining</h2><p className="text-sm">{t.rejectReason}</p></Card>}
