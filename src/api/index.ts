@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, SurgeStatus, PricingDraft, PricingVersionPage, PricingVersionDetail, PricingSchedules, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, SurgeStatus, PolicyChange, PricingDraft, PricingVersionPage, PricingVersionDetail, PricingSchedules, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -211,6 +211,9 @@ export const api = {
     policies: () => request<CancellationPolicy[]>('/api/admin/business/cancellation-policies', { business: true }),
     savePolicy: (input: PolicyFields & { categoryId: string; regionId: string | null }) =>
       request<CancellationPolicy>('/api/admin/business/cancellation-policies', { method: 'PUT', body: json(input), business: true }),
+    policyHistory: () => request<{ items: PolicyChange[] }>('/api/admin/business/cancellation-policies/history', { business: true }),
+    restorePolicy: (id: string, force: boolean) =>
+      request<{ restored?: string; unchanged?: boolean }>(`/api/admin/business/cancellation-policies/history/${id}/restore`, { method: 'POST', body: json({ force }), business: true }),
     deletePolicy: (id: string) =>
       request<{ id: string }>(`/api/admin/business/cancellation-policies/${id}`, { method: 'DELETE', business: true }),
   },

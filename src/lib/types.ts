@@ -189,6 +189,7 @@ export interface PolicyFields {
   conditions: string
 }
 
+export interface PolicyChange { id: string; at: string; by: string | null; op: 'SAVE' | 'DELETE' | 'RESTORE'; categoryId: string; category: string | null; regionId: string | null; region: string | null; changes: { field: string; label: string; from: number | string | null; to: number | string | null }[]; restoreOf: string | null }
 export interface CancellationPolicy extends PolicyFields {
   id: string
   categoryId: string

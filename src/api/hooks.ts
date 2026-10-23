@@ -23,6 +23,7 @@ export const usePricingSchedules = () => useBusinessQuery('pricing-schedules', a
 export const usePricingVersions = (page: number) => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'pricing-versions', page], queryFn: () => api.business.pricingVersions(page), enabled: !!tenantId, placeholderData: keepPreviousData }) }
 export const usePricingVersion = (version: number) => useBusinessQuery(`pricing-version:${version}`, () => api.business.pricingVersion(version), !!version)
 export const useFareRules = () => useBusinessQuery('fare-rules', api.business.fareRules)
+export const usePolicyHistory = () => useBusinessQuery('policy-history', api.business.policyHistory)
 export const usePolicies = () => useBusinessQuery('policies', api.business.policies)
 
 /**

@@ -12,6 +12,7 @@ import SetupGuide from '@/components/SetupGuide'
 import PricingReview from '@/components/PricingReview'
 import SurgePanel from '@/components/SurgePanel'
 import PricingHistory from '@/components/PricingHistory'
+import PolicyHistory from '@/components/PolicyHistory'
 import { useConfirm } from '@/components/feedback'
 import { Alert, Button, Card, EmptyState, ErrorState, Field, PageHeader, Select, SelectField, Spinner, TextField, Textarea, Toggle } from '@/components/ui'
 
@@ -348,7 +349,7 @@ export default function Pricing() {
       <SetupGuide />
       <SurgePanel canEdit={canEdit} />
       <PricingReview canEdit={canEdit} currency={currency} nameOf={nameOf} scopeOf={scopeOf} />
-      <div className="mb-6"><Alert kind="info">Rules saved here price new ride requests for this business: the estimate a rider sees and the fare recorded on the trip. Cancellation fees are stored but not charged yet, and surge follows demand within the cap you set on the rule.</Alert></div>
+      <div className="mb-6"><Alert kind="info">Rules saved here price new ride requests for this business: the estimate a rider sees and the fare recorded on the trip. The rider cancellation fee is charged when a rider cancels after the free window; the driver penalty is stored but not charged yet. Surge follows demand within the cap you set on the rule.</Alert></div>
 
       {setup.ready && !setup.complete && canEdit && (
         <Card className="mb-6 flex flex-wrap items-center justify-between gap-3 border-ok/50 p-4">
@@ -391,6 +392,7 @@ export default function Pricing() {
             )}
           </Card>
           <PricingHistory canEdit={canEdit} currency={currency} nameOf={nameOf} scopeOf={scopeOf} />
+          <PolicyHistory canEdit={canEdit} currency={currency} />
         </>
       )}
     </>
