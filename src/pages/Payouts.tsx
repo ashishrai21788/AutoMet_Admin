@@ -143,7 +143,7 @@ function AdjustmentModal({ currency, onClose }: { currency: string; onClose: () 
         <div className="mt-5 border-t border-line pt-3">
           <h4 className="mb-2 text-sm font-semibold">Recent</h4>
           <ul className="max-h-48 space-y-1 overflow-auto text-xs">
-            {recent.data.items.slice(0, 15).map((a) => <li key={a.id} className="flex justify-between gap-2"><span className="truncate">{a.driverName} · {a.kind === 'INCENTIVE' ? 'Incentive: ' + a.title : a.reason}</span><span className={a.amount < 0 ? 'text-danger' : ''}>{fmtMoney(a.amount, currency)}</span></li>)}
+            {recent.data.items.slice(0, 15).map((a) => <li key={a.id} className="flex justify-between gap-2"><span className="truncate">{a.driverName} · {a.kind === 'INCENTIVE' ? 'Incentive: ' + a.title : a.kind === 'PENALTY' ? 'Cancellation penalty: ' + a.reason : a.reason}</span><span className={a.amount < 0 ? 'text-danger' : ''}>{fmtMoney(a.amount, currency)}</span></li>)}
           </ul>
         </div>
       )}

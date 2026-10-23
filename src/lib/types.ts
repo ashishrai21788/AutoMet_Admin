@@ -891,7 +891,7 @@ export interface IncentiveItem {
 }
 export interface IncentiveInput { name: string; description?: string; targetTrips: number; bonus: number; startsAt: string; endsAt: string; categoryId: string | null; active: boolean }
 
-export interface AdjustmentItem { id: string; driverId: string; driverName: string; kind: 'INCENTIVE' | 'ADJUSTMENT'; amount: number; title: string; reason: string; at: string; by: string }
+export interface AdjustmentItem { id: string; driverId: string; driverName: string; kind: 'INCENTIVE' | 'ADJUSTMENT' | 'PENALTY'; amount: number; title: string; reason: string; at: string; by: string }
 
 export interface CouponItem {
   id: string
