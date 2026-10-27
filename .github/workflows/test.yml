@@ -1,0 +1,37 @@
+name: Dashboard checks
+
+# Type check and build, lint, the tests, and a dependency audit, on every push and pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dashboard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check and build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://api.example.invalid
+      - name: Tests
+        run: npm test
+      - name: Fail on a high or critical advisory in a production dependency
+        run: npm audit --omit=dev --audit-level=high
