@@ -5,6 +5,7 @@ import { fmtDateTime } from '@/lib/labels'
 import type { AlertItem, OpsAlert } from '@/lib/types'
 import { SEVERITY } from '@/lib/severity'
 import { Badge, Button, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
+import SosPanel from '@/components/SosPanel'
 
 
 /** Where an item of an alert opens. */
@@ -50,6 +51,7 @@ export default function Alerts() {
   return (
     <>
       <PageHeader title="Alerts" subtitle={`Things that need attention, worked out from this business's live records. Checked ${fmtDateTime(generatedAt)}.`} action={<Button variant="ghost" loading={alerts.isFetching} onClick={() => alerts.refetch()}>Refresh</Button>} />
+      <SosPanel />
       {list.length === 0 ? (
         <Card className="p-10 text-center">
           <CheckCircle2 className="mx-auto mb-2 text-ok" size={28} aria-hidden />

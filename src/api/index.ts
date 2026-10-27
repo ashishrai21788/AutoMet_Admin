@@ -1,5 +1,5 @@
 import type {
-  SetupDraftSaved, SetupDraftData,
+  SetupDraftSaved, SetupDraftData, SosItem, SosList,
   AdminUser, Business, CancellationPolicy, Category, CategoryInput, CreatedBusiness, CreatedUser, FarePreview,
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
@@ -179,6 +179,9 @@ export const api = {
     completeSetup: () => request<SetupStatus>('/api/admin/business/setup/complete', { method: 'POST', business: true }),
 
     regions: () => request<Region[]>('/api/admin/business/regions', { business: true }),
+    sos: (status: 'open' | 'resolved' | 'all') => request<SosList>(`/api/admin/business/sos?status=${status}`, { business: true }),
+    acknowledgeSos: (id: string) => request<SosItem>(`/api/admin/business/sos/${encodeURIComponent(id)}/acknowledge`, { method: 'POST', business: true }),
+    resolveSos: (id: string, note: string) => request<SosItem>(`/api/admin/business/sos/${encodeURIComponent(id)}/resolve`, { method: 'POST', body: json({ note }), business: true }),
     setupDraft: () => request<SetupDraftData>('/api/admin/business/setup/draft', { business: true }),
     discardSetupDraft: (id?: string) => request<{ discarded: number }>(`/api/admin/business/setup/draft${id ? `/${encodeURIComponent(id)}` : ''}`, { method: 'DELETE', business: true }),
     publishSetup: (note: string) => request<{ published: { added: number; changed: number } }>('/api/admin/business/setup/publish', { method: 'POST', body: json({ note }), business: true }),

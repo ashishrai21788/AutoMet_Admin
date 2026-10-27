@@ -19,6 +19,11 @@ export const useAppVersions = () => useBusinessQuery('app-versions', api.busines
 export const useRegions = () => useBusinessQuery('regions', api.business.regions)
 export const useCategories = () => useBusinessQuery('categories', api.business.categories)
 export const useSurge = () => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'surge'], queryFn: api.business.surge, enabled: !!tenantId, refetchInterval: 30000 }) }
+/** Emergencies, refreshed every 15 seconds: staff must see a new one soon after it is raised. */
+export const useSos = (status: 'open' | 'resolved' | 'all' = 'open', enabled = true) => {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, `sos:${status}`], queryFn: () => api.business.sos(status), enabled: !!tenantId && enabled, refetchInterval: 15_000 })
+}
 export const useSetupDraft = () => useBusinessQuery('setup-draft', api.business.setupDraft)
 export const usePricingDraft = () => useBusinessQuery('pricing-draft', api.business.pricingDraft)
 export const usePricingSchedules = () => useBusinessQuery('pricing-schedules', api.business.pricingSchedules)

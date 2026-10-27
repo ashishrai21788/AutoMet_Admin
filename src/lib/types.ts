@@ -941,3 +941,16 @@ export interface SetupDraftData {
   summary: { added: number; changed: number }
   stale: string[]
 }
+
+/** An emergency raised by a rider or driver during a ride. */
+export interface SosItem {
+  id: string; tripId: string; status: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED'; presses: number; tripStatus: string | null
+  raisedBy: { role: 'rider' | 'driver'; name: string | null; phone: string | null }
+  other: { name: string | null; phone: string | null }
+  vehicle: string | null; pickup: string | null; drop: string | null
+  locations: { lat: number; lng: number; accuracy: number | null; at: string }[]
+  mapUrl: string | null; createdAt: string; lastPressAt: string
+  acknowledgedBy: { email: string | null } | null; acknowledgedAt: string | null
+  resolvedBy: { email: string | null } | null; resolvedAt: string | null; resolution: string | null
+}
+export interface SosList { items: SosItem[]; open: number; unacknowledged: number }

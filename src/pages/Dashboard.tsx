@@ -7,6 +7,7 @@ import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import OperationsSection from '@/components/OperationsSection'
 import { Alert, Badge, Button, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
+import SosPanel from '@/components/SosPanel'
 
 const REDIRECT_KEY = 'automet-admin-setup-redirected'
 
@@ -50,6 +51,8 @@ export default function Dashboard() {
         subtitle={`${business.name} · App ID ${business.appId}`}
         action={setup.complete ? <Badge kind="ok">Setup complete</Badge> : <Badge kind="warn">Setup {setup.percent}%</Badge>}
       />
+
+      <SosPanel />
 
       {!setup.complete && (
         <Card className="mb-6 p-5">
