@@ -33,7 +33,7 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/regions', label: 'Service Regions', icon: MapPin, permission: 'dashboard.view' },
   { to: '/categories', label: 'Vehicle Categories', icon: Car, permission: 'dashboard.view' },
   { to: '/pricing', label: 'Pricing & Fare Rules', icon: Calculator, permission: 'dashboard.view' },
-  { to: '/live-map', label: 'Live Map', icon: MapIcon, permission: 'dashboard.view' },
+  { to: '/live-map', label: 'Live Map', icon: MapIcon, permission: 'drivers.view' },
   { to: '/trips', label: 'Rides & Trips', icon: Route, permission: 'trips.view' },
   { to: '/reports', label: 'Reports & Analytics', icon: BarChart3, permission: 'trips.view' },
   { to: '/drivers', label: 'Drivers', icon: Users, permission: 'drivers.view' },
