@@ -13,6 +13,7 @@ export function useBusinessQuery<T>(name: string, fn: () => Promise<T>, enabled 
 export const useOverview = () => useBusinessQuery('overview', api.business.overview)
 export const useConfigHistory = (page: number) => { const { tenantId } = useScope(); return useQuery({ queryKey: ['biz', tenantId, 'config-history', page], queryFn: () => ops.configHistory.list(page), enabled: !!tenantId, placeholderData: keepPreviousData }) }
 export const useConfigVersion = (version: number) => useBusinessQuery(`config-version:${version}`, () => ops.configHistory.get(version), !!version)
+export const useChatSettings = () => useBusinessQuery('chat-settings', api.business.chatSettings)
 export const useTollSettings = () => useBusinessQuery('toll-settings', api.business.tollSettings)
 export const useAppVersions = () => useBusinessQuery('app-versions', api.business.appVersions)
 export const useRegions = () => useBusinessQuery('regions', api.business.regions)
@@ -139,4 +140,5 @@ export function useTrips(params: Params) {
   const { tenantId } = useScope()
   return useQuery({ queryKey: ['biz', tenantId, 'trips', params], queryFn: () => ops.trips.list(params), enabled: !!tenantId, placeholderData: keepPreviousData, refetchInterval: 30000 })
 }
+export const useTripChat = (id: string) => useBusinessQuery(`trip-chat:${id}`, () => ops.trips.chat(id), !!id)
 export const useTrip = (id: string) => useBusinessQuery(`trip:${id}`, () => ops.trips.get(id), !!id)

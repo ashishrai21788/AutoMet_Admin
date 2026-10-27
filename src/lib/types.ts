@@ -869,6 +869,8 @@ export interface ConfigVersionItem { version: number; at: string; by: string | n
 export interface ConfigHistoryPage { items: ConfigVersionItem[]; total: number; page: number; pageSize: number; current: number | null }
 export interface ConfigVersionDetail extends ConfigVersionItem { changes: ConfigChange[]; comparedToNow: ConfigChange[] }
 export interface SurgeStatus { paused: boolean; rules: { categoryId: string; category: string; regionId: string | null; area: string; maxMultiplier: number }[]; areas: { regionId: string; area: string; categoryId: string; category: string; multiplier: number; demand: number; supply: number }[]; ladder: { ratio: number; multiplier: number }[]; minDemand: number; nearKm: number }
+export interface ChatMessageItem { id: string; from: 'rider' | 'driver'; text: string; at: string; read: boolean }
+export interface ChatSettings { enabled: boolean }
 export interface TollSettings { enabled: boolean; maxToll: number; currency: string }
 export interface AppVersions { rider: AppVersionPolicy; driver: AppVersionPolicy; defaultMessage?: string }
 export interface PayoutSettings { commissionPercent: number; minWithdrawal: number; cashWithdrawable: boolean; processingNote: string; currency: string }

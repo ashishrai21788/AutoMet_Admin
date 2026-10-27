@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { ops } from '@/api'
-import { useTrip } from '@/api/hooks'
+import { useTrip, useTripChat } from '@/api/hooks'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import { fmtDateTime, fmtMoney } from '@/lib/labels'
@@ -19,6 +19,32 @@ const osm = (p: { lat: number; lng: number }) => `https://www.openstreetmap.org/
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="flex justify-between gap-4 py-1.5 text-sm"><dt className="text-muted">{label}</dt><dd className="text-right">{children}</dd></div>
+}
+
+/** What the rider and the driver wrote to each other on this trip. Read-only: for disputes and safety. */
+function ChatPanel({ tripId }: { tripId: string }) {
+  const q = useTripChat(tripId)
+  if (q.isLoading) return <Card className="p-5"><Spinner /></Card>
+  if (q.isError) return <Card className="p-5"><ErrorState error={q.error} onRetry={() => q.refetch()} /></Card>
+  const items = q.data!.messages
+  return (
+    <Card className="p-5">
+      <h2 className="mb-3 font-semibold">Chat between rider and driver</h2>
+      {items.length === 0 ? <p className="text-sm text-muted">They did not message each other on this trip.</p> : (
+        <ul className="space-y-2 text-sm">
+          {items.map((m) => (
+            <li key={m.id}>
+              <div className="flex items-baseline justify-between gap-2 text-xs text-muted">
+                <span className={m.from === 'driver' ? 'font-semibold text-brand' : 'font-semibold text-ink'}>{m.from === 'driver' ? 'Driver' : 'Rider'}</span>
+                <span>{fmtDateTime(m.at)}</span>
+              </div>
+              <p className="break-words">{m.text}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  )
 }
 
 export default function TripDetail() {
@@ -137,6 +163,7 @@ export default function TripDetail() {
               </dl>
             </Card>
           )}
+          <ChatPanel tripId={t.id} />
           {t.driverPenalty && (
             <Card className="p-5">
               <h2 className="mb-3 font-semibold">Driver cancellation penalty</h2>

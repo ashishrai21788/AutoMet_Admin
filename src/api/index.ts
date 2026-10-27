@@ -3,7 +3,7 @@ import type {
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
 import type {
-  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, SurgeStatus, PolicyChange, PricingDraft, PricingVersionPage, PricingVersionDetail, PricingSchedules, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
+  AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, SurgeStatus, PolicyChange, ChatMessageItem, ChatSettings, PricingDraft, PricingVersionPage, PricingVersionDetail, PricingSchedules, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
 import { useAuth } from '@/store/auth'
 
@@ -166,6 +166,8 @@ export const api = {
     overview: () => request<Overview>('/api/admin/business/overview', { business: true }),
     updateSettings: (input: Partial<Pick<Business, 'name' | 'appName' | 'brandColor' | 'logoUrl' | 'supportEmail' | 'supportPhone'>>) =>
       request<Business>('/api/admin/business/settings', { method: 'PUT', body: json(input), business: true }),
+    chatSettings: () => request<ChatSettings>('/api/admin/business/chat-settings', { business: true }),
+    updateChatSettings: (enabled: boolean) => request<ChatSettings>('/api/admin/business/chat-settings', { method: 'PUT', body: json({ enabled }), business: true }),
     tollSettings: () => request<TollSettings>('/api/admin/business/toll-settings', { business: true }),
     updateTollSettings: (input: { enabled: boolean; maxToll: number }) => request<TollSettings>('/api/admin/business/toll-settings', { method: 'PUT', body: json(input), business: true }),
     appVersions: () => request<AppVersions>('/api/admin/business/app-versions', { business: true }),
@@ -365,6 +367,7 @@ export const ops = {
     list: (params: Record<string, string | number | undefined>) => get<Paged<TripItem>>(`/trips${qs(params)}`),
     get: (id: string) => get<TripDetail>(`/trips/${id}`),
     cancel: (id: string, reason: string) => send<{ id: string; status: string }>('POST', `/trips/${id}/cancel`, { reason }),
+    chat: (id: string) => get<{ messages: ChatMessageItem[]; total: number }>(`/trips/${id}/chat`),
     waiveDriverPenalty: (id: string, reason: string) => send<{ waived: boolean }>('POST', `/trips/${id}/waive-driver-penalty`, { reason }),
   },
 }

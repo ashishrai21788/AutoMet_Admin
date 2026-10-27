@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '@/api'
-import { useAppVersions, useTollSettings, useBusinessMutation, useGeo, useOverview } from '@/api/hooks'
+import { useAppVersions, useChatSettings, useTollSettings, useBusinessMutation, useGeo, useOverview } from '@/api/hooks'
 import { useConfirm } from '@/components/feedback'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
@@ -116,6 +116,23 @@ function AppVersionsCard({ canEdit }: { canEdit: boolean }) {
   )
 }
 
+/** Ride chat between a rider and their driver, from when the driver accepts until the ride ends. The business can switch it off for all its rides. */
+function ChatCard({ canEdit }: { canEdit: boolean }) {
+  const current = useChatSettings()
+  const save = useBusinessMutation((enabled: boolean) => api.business.updateChatSettings(enabled), { success: 'Chat setting saved' })
+  if (current.isLoading) return <Card className="mt-6 p-5"><Spinner /></Card>
+  if (current.isError) return <Card className="mt-6 p-5"><ErrorState error={current.error} onRetry={() => current.refetch()} /></Card>
+  const enabled = current.data!.enabled
+  return (
+    <Card className="mt-6 p-5">
+      <h2 className="font-semibold">Ride chat</h2>
+      <p className="mb-4 mt-1 text-sm text-muted">Riders and drivers can message each other from the moment the driver accepts until the ride ends. Staff can read a trip's conversation from the trip page. Switching it off stops new messages everywhere; conversations already held can still be read.</p>
+      <Toggle label="Riders and drivers can chat during a ride" checked={enabled} disabled={!canEdit || save.isPending} onChange={(on) => save.mutate(on)} />
+      {!canEdit && <p className="mt-3 text-sm text-muted">Your role can view this setting but not change it.</p>}
+    </Card>
+  )
+}
+
 /** Whether drivers may enter a toll when ending a trip, and the most they may enter. The rider pays it back on top of the fare and the driver receives all of it. */
 function TollsCard({ canEdit }: { canEdit: boolean }) {
   const current = useTollSettings()
@@ -218,6 +235,7 @@ export default function BusinessSettings() {
       <SettingsForm business={b} canEdit={canEdit} />
 
       <TollsCard canEdit={canEdit} />
+      <ChatCard canEdit={canEdit} />
 
       <AppVersionsCard canEdit={canEdit} />
 
