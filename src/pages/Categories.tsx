@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Bike, Bus, Car, CarFront, Crown, Plus, Truck, TramFront, Zap } from 'lucide-react'
 import { api } from '@/api'
 import { useBusinessMutation, useCategories, useOverview, useRegions } from '@/api/hooks'
+import SetupReview from '@/components/SetupReview'
+import { savedText } from '@/lib/setupLabels'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import { ICON_KEYS, RIDE_TYPES, type Category, type CategoryInput, type IconKey, type Region } from '@/lib/types'
@@ -46,7 +48,7 @@ function CategoryModal({ category, regions, onClose }: { category: Category | nu
   const [touched, setTouched] = useState(false)
   const save = useBusinessMutation(
     (input: CategoryInput) => category ? api.business.updateCategory(category.id, input) : api.business.createCategory(input),
-    { success: category ? 'Category updated' : 'Category created', onSuccess: onClose },
+    { success: (r) => savedText(r, () => (category ? 'Category updated' : 'Category created')), onSuccess: onClose },
   )
   const local = validate(form)
   const fe = { ...(touched ? local : {}), ...save.fieldErrors }
@@ -123,7 +125,7 @@ export default function Categories() {
   const [chosen, setModal] = useState<Category | 'new' | null | undefined>(undefined)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
-  const toggle = useBusinessMutation((c: Category) => api.business.updateCategory(c.id, { active: !c.active }), { success: (c) => `${c.name} is now ${c.active ? 'active' : 'inactive'}` })
+  const toggle = useBusinessMutation((c: Category) => api.business.updateCategory(c.id, { active: !c.active }), { success: (c) => savedText(c, (x) => `${x.name} is now ${x.active ? 'active' : 'inactive'}`) })
 
   const regionList = regions.data ?? []
   const hasRegions = regionList.some((r) => r.active)
@@ -172,6 +174,7 @@ export default function Categories() {
     <>
       <PageHeader title="Vehicle Categories" subtitle="The kinds of vehicles riders can book. Each category can be offered in some regions and not others." />
       <SetupGuide />
+      <SetupReview canEdit={canEdit} />
 
       {!hasRegions && !regions.isLoading && (
         <Card className="mb-6"><EmptyState title="Add a region first" text="Categories are offered in specific regions, so at least one active region is needed." action={<Link to="/regions"><Button>Go to Regions</Button></Link>} /></Card>

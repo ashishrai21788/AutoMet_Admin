@@ -929,3 +929,15 @@ export interface LegalDoc {
 }
 export interface LegalOverviewItem { type: string; label: string; audience: ('rider' | 'driver')[]; suggestConsent: boolean; inForce: LegalDoc | null; scheduled: LegalDoc | null; draft: LegalDoc | null; versions: number }
 export interface LegalAcceptanceCount { type: string; version: number; riders: number; drivers: number }
+
+/** The answer to saving a region or category while the business reviews setup changes first. */
+export interface SetupDraftSaved { draft: true; drafts: { id: string; entity: 'region' | 'category'; op: 'CREATE' | 'UPDATE' }[]; skipped?: string[] }
+export interface SetupFieldChange { field: string; from: unknown; to: unknown }
+export interface SetupChange { id: string; entity: 'region' | 'category'; kind: 'ADDED' | 'CHANGED'; label: string; fields: SetupFieldChange[] }
+export interface SetupDraftData {
+  mode: 'direct' | 'draft'
+  drafts: { id: string; entity: 'region' | 'category'; op: 'CREATE' | 'UPDATE'; targetId: string | null; label: string; stale: boolean; createdAt: string; createdBy: string | null }[]
+  changes: SetupChange[]
+  summary: { added: number; changed: number }
+  stale: string[]
+}

@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { Plus, X } from 'lucide-react'
 import { api } from '@/api'
 import { useBusinessMutation, useGeo, useOverview, useRegions } from '@/api/hooks'
+import SetupReview from '@/components/SetupReview'
+import { savedText } from '@/lib/setupLabels'
 import { useScope } from '@/lib/useScope'
 import { can } from '@/lib/permissions'
 import { cityCenter, citiesFor, countryName, currenciesFor, statesFor, timezonesFor, type GeoData } from '@/lib/geo'
@@ -104,7 +106,7 @@ function AddRegionsModal({ country, geo, onClose }: { country: string; geo: GeoD
   const visible = known.filter((c) => c.toLowerCase().includes(filter.trim().toLowerCase()))
 
   const add = useBusinessMutation(api.business.addRegions, {
-    success: (r) => `${r.created.length} region${r.created.length === 1 ? '' : 's'} added${r.skipped.length ? `, ${r.skipped.length} already existed` : ''}`,
+    success: (r) => savedText(r, (x) => `${x.created.length} region${x.created.length === 1 ? '' : 's'} added${x.skipped.length ? `, ${x.skipped.length} already existed` : ''}`),
     onSuccess: onClose,
   })
 
@@ -197,7 +199,7 @@ function EditRegionModal({ region, onClose }: { region: Region; onClose: () => v
   const [touched, setTouched] = useState(false)
   const save = useBusinessMutation(
     (input: Parameters<typeof api.business.updateRegion>[1]) => api.business.updateRegion(region.id, input),
-    { success: 'Region updated', onSuccess: onClose },
+    { success: (r) => savedText(r, () => 'Region updated'), onSuccess: onClose },
   )
 
   const anyArea = lat.trim() !== '' || lng.trim() !== '' || radius.trim() !== ''
@@ -294,7 +296,7 @@ export default function Regions() {
   const [editing, setEditing] = useState<Region | null>(null)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
-  const toggleActive = useBusinessMutation((r: Region) => api.business.updateRegion(r.id, { active: !r.active }), { success: (r) => `${r.city} is now ${r.active ? 'active' : 'inactive'}` })
+  const toggleActive = useBusinessMutation((r: Region) => api.business.updateRegion(r.id, { active: !r.active }), { success: (r) => savedText(r, (x) => `${x.city} is now ${x.active ? 'active' : 'inactive'}`) })
 
   // "?new=1" comes from the dashboard's quick action
   const fromLink = params.get('new') === '1' && !!overview.data?.business.market && canEdit
@@ -345,6 +347,7 @@ export default function Regions() {
       <PageHeader title="Regions" subtitle="Where this business operates. Choose the country first, then add the cities and zones you serve." />
       <SetupGuide />
       <MarketCard key={business.market ? 'set' : 'unset'} business={business} geo={geo} locked={locked} canEdit={canEdit} />
+      <SetupReview canEdit={canEdit} />
 
       <Card>
         <div className="flex flex-wrap items-center gap-3 border-b border-line p-4">

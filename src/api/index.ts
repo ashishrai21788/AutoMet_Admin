@@ -1,4 +1,5 @@
 import type {
+  SetupDraftSaved, SetupDraftData,
   AdminUser, Business, CancellationPolicy, Category, CategoryInput, CreatedBusiness, CreatedUser, FarePreview,
   FareRule, FareRuleFields, LocateResult, Market, NewBusinessInput, NewUserInput, Overview, PolicyFields, Region, Session, SetupStatus,
 } from '@/lib/types'
@@ -178,19 +179,23 @@ export const api = {
     completeSetup: () => request<SetupStatus>('/api/admin/business/setup/complete', { method: 'POST', business: true }),
 
     regions: () => request<Region[]>('/api/admin/business/regions', { business: true }),
+    setupDraft: () => request<SetupDraftData>('/api/admin/business/setup/draft', { business: true }),
+    discardSetupDraft: (id?: string) => request<{ discarded: number }>(`/api/admin/business/setup/draft${id ? `/${encodeURIComponent(id)}` : ''}`, { method: 'DELETE', business: true }),
+    publishSetup: (note: string) => request<{ published: { added: number; changed: number } }>('/api/admin/business/setup/publish', { method: 'POST', body: json({ note }), business: true }),
+    setSetupWorkflow: (mode: 'direct' | 'draft') => request<{ mode: string }>('/api/admin/business/setup/workflow', { method: 'PUT', body: json({ mode }), business: true }),
     addRegions: (input: { state: string; cities: (string | { name: string; lat: number; lng: number })[]; zoneName: string; radiusKm: number | string }) =>
-      request<{ created: Region[]; skipped: string[] }>('/api/admin/business/regions', { method: 'POST', body: json(input), business: true }),
+      request<{ created: Region[]; skipped: string[] } | SetupDraftSaved>('/api/admin/business/regions', { method: 'POST', body: json(input), business: true }),
     updateRegion: (id: string, input: { zoneName?: string; active?: boolean; center?: { lat: number | string; lng: number | string } | null; radiusKm?: number | string }) =>
-      request<Region>(`/api/admin/business/regions/${id}`, { method: 'PATCH', body: json(input), business: true }),
+      request<Region | SetupDraftSaved>(`/api/admin/business/regions/${id}`, { method: 'PATCH', body: json(input), business: true }),
 
     locate: (point: { lat: number | string; lng: number | string }) =>
       request<LocateResult>('/api/admin/business/regions/locate', { method: 'POST', body: json(point), business: true }),
 
     categories: () => request<Category[]>('/api/admin/business/categories', { business: true }),
     createCategory: (input: CategoryInput) =>
-      request<Category>('/api/admin/business/categories', { method: 'POST', body: json(input), business: true }),
+      request<Category | SetupDraftSaved>('/api/admin/business/categories', { method: 'POST', body: json(input), business: true }),
     updateCategory: (id: string, input: Partial<CategoryInput> & { active?: boolean }) =>
-      request<Category>(`/api/admin/business/categories/${id}`, { method: 'PATCH', body: json(input), business: true }),
+      request<Category | SetupDraftSaved>(`/api/admin/business/categories/${id}`, { method: 'PATCH', body: json(input), business: true }),
 
     fareRules: () => request<FareRule[]>('/api/admin/business/fare-rules', { business: true }),
     saveFareRule: (input: FareRuleFields & { categoryId: string; regionId: string | null }) =>
