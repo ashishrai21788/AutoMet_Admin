@@ -6,6 +6,7 @@ import type {
 import type {
   AssignSubscriptionInput, BillingDetails, BillingRunResult, PlatformSettingsInput, TwoFactorChallenge, TwoFactorSetup, BusinessBilling, Invoice, InvoiceType, PaymentMethod, Plan, PlanInput, PlatformSettings, RevenueSummary, Subscription, AlertsPayload, AuditPage, PlatformAuditPage, IssueDetail, IssuePage, IssueStatus, PayoutDetail, PayoutItem, PayoutPage, PayoutSettings, AppVersions, TollSettings, ConfigHistoryPage, ConfigVersionDetail, SurgeStatus, PolicyChange, ChatMessageItem, ChatSettings, PricingDraft, PricingVersionPage, PricingVersionDetail, PricingSchedules, IncentiveItem, IncentiveInput, AdjustmentItem, CouponItem, CouponInput, CouponUse, LegalDoc, LegalOverviewItem, LegalAcceptanceCount, LiveMapData, ReportData, OpsStats, PlatformOverview, RiderDetail, RiderItem, TripDetail, TripItem, Availability, DocumentsPayload, DriverDetail, DriverInput, DriverListItem, HistoryEntry, Paged, RequirementDef, VehicleDetail, VehicleInput, RideSettings, VehicleListItem, VerificationStatus,
 } from '@/lib/types'
+import type { CommissionReport, Finding, PaymentDetail, PaymentPage, PaymentSettings, ReconcileRun, WeatherPricing, AdminPayment, PaymentRefundRow } from '@/lib/payments'
 import { useAuth } from '@/store/auth'
 
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/$/, '')
@@ -334,6 +335,24 @@ export const ops = {
     fail: (id: string, reason: string) => send<PayoutItem>('POST', `/payouts/${id}/fail`, { reason }),
     settings: () => get<PayoutSettings>('/payout-settings'),
     updateSettings: (input: { commissionPercent: number; minWithdrawal: number; cashWithdrawable: boolean; processingNote: string }) => send<PayoutSettings>('PUT', '/payout-settings', input),
+  },
+  /** Commission and Collections: payments, refunds, cash decisions, commission owed by drivers, reconciliation, and the payment and weather settings. */
+  payments: {
+    list: (params: Record<string, string | number | undefined>) => get<PaymentPage>(`/payments${qs(params)}`),
+    get: (id: string) => get<PaymentDetail>(`/payments/${encodeURIComponent(id)}`),
+    refund: (id: string, input: { amountMinor: number; reason: string; idempotencyKey: string }) =>
+      send<{ refund: PaymentRefundRow; duplicate: boolean }>('POST', `/payments/${encodeURIComponent(id)}/refund`, { amount_minor: input.amountMinor, reason: input.reason, idempotency_key: input.idempotencyKey }),
+    resolveCash: (id: string, input: { action: 'CONFIRM' | 'ADJUST'; adjustedFareMinor?: number | null; reason: string }) =>
+      send<{ payment: AdminPayment }>('POST', `/payments/${encodeURIComponent(id)}/cash/resolve`, { action: input.action, adjusted_fare_minor: input.adjustedFareMinor ?? undefined, reason: input.reason }),
+    commission: () => get<CommissionReport>('/commission'),
+    recover: (driverId: string) => send<{ recovered_minor: number; duplicate: boolean }>('POST', `/commission/drivers/${encodeURIComponent(driverId)}/recover`, {}),
+    reconciliation: (status: 'open' | 'resolved' | '') => get<{ items: Finding[] }>(`/reconciliation${qs({ status })}`),
+    reconcile: () => send<ReconcileRun>('POST', '/reconciliation/run', {}),
+    resolveFinding: (id: string, note: string) => send<{ finding: Finding }>('POST', `/reconciliation/${encodeURIComponent(id)}/resolve`, { note }),
+    settings: () => get<PaymentSettings>('/payment-settings'),
+    updateSettings: (input: { enabledMethods: string[]; provider: string | null; commissionRecovery: string; paymentWindowMinutes: number }) => send<PaymentSettings>('PUT', '/payment-settings', input),
+    weather: () => get<WeatherPricing>('/weather-pricing'),
+    updateWeather: (input: { enabled: boolean; multipliers: Record<string, number>; maxMultiplier: number }) => send<WeatherPricing>('PUT', '/weather-pricing', input),
   },
   legal: {
     overview: () => get<{ items: LegalOverviewItem[] }>('/legal'),

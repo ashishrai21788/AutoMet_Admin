@@ -39,6 +39,7 @@ const Trips = lazy(() => import('@/pages/Trips'))
 const Reports = lazy(() => import('@/pages/Reports'))
 const Support = lazy(() => import('@/pages/Support'))
 const Payouts = lazy(() => import('@/pages/Payouts'))
+const Collections = lazy(() => import('@/pages/Collections'))
 const Incentives = lazy(() => import('@/pages/Incentives'))
 const ConfigHistory = lazy(() => import('@/pages/ConfigHistory'))
 const Coupons = lazy(() => import('@/pages/Coupons'))
@@ -103,6 +104,7 @@ export default function App() {
                   </Route>
                   <Route element={<RequirePermission permission="payments.view" />}>
                     <Route path="payouts" element={<Payouts />} />
+                    <Route path="collections" element={<Collections />} />
                     <Route path="incentives" element={<Incentives />} />
                     <Route path="config-history" element={<ConfigHistory />} />
                     <Route path="coupons" element={<Coupons />} />

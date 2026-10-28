@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import {
   BadgeCheck, BarChart3, Bell, Building2, Calculator, Car, CarFront, CircleUserRound, Gauge, History, LayoutDashboard, LogOut, MapPin, Menu, PanelLeftClose, PanelLeftOpen,
-  LifeBuoy, Layers, Map as MapIcon, Route, ShieldCheck, Settings, SlidersHorizontal, UserCog, UserRound, Users, Wallet, X,
+  LifeBuoy, Layers, Map as MapIcon, Receipt, Route, ShieldCheck, Settings, SlidersHorizontal, UserCog, UserRound, Users, Wallet, X,
 } from 'lucide-react'
 import { api } from '@/api'
 import { useAlerts } from '@/api/hooks'
@@ -41,6 +41,7 @@ const BUSINESS_NAV: NavItem[] = [
   { to: '/vehicles', label: 'Vehicles', icon: CarFront, permission: 'vehicles.view' },
   { to: '/verification', label: 'Driver Verification', icon: BadgeCheck, permission: 'documents.view' },
   { to: '/coupons', label: 'Coupons', icon: Calculator, permission: 'payments.view' },
+  { to: '/collections', label: 'Commission & Collections', icon: Receipt, permission: 'payments.view' },
   { to: '/payouts', label: 'Driver Payouts', icon: Wallet, permission: 'payments.view' },
   { to: '/incentives', label: 'Incentives & Goals', icon: Gauge, permission: 'payments.view' },
   { to: '/support', label: 'Support', icon: LifeBuoy, permission: 'support.manage' },

@@ -8,6 +8,7 @@ import { can } from '@/lib/permissions'
 import { countryName } from '@/lib/geo'
 import type { AppVersionPolicy, AppVersions, Business } from '@/lib/types'
 import RequirementsCard from '@/components/RequirementsCard'
+import { PaymentSettingsCard } from '@/components/payments/SettingsCards'
 import { Badge, Button, Card, ErrorState, PageHeader, Spinner, TextField, Toggle } from '@/components/ui'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -236,6 +237,7 @@ export default function BusinessSettings() {
 
       <TollsCard canEdit={canEdit} />
       <ChatCard canEdit={canEdit} />
+      {can(user, 'payments.view') && <PaymentSettingsCard canEdit={canEdit && can(user, 'payments.manage')} />}
 
       <AppVersionsCard canEdit={canEdit} />
 

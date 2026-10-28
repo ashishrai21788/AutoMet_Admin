@@ -115,6 +115,16 @@ export function usePayouts(params: Params) {
   return useQuery({ queryKey: ['biz', tenantId, 'payouts', params], queryFn: () => ops.payouts.list(params), enabled: !!tenantId, placeholderData: keepPreviousData, refetchInterval: 60000 })
 }
 export const usePayout = (id: string, enabled = true) => useBusinessQuery(`payout:${id}`, () => ops.payouts.get(id), !!id && enabled)
+// ---- Commission and Collections ----
+export function usePayments(params: Params, enabled = true) {
+  const { tenantId } = useScope()
+  return useQuery({ queryKey: ['biz', tenantId, 'payments', params], queryFn: () => ops.payments.list(params), enabled: !!tenantId && enabled, placeholderData: keepPreviousData, refetchInterval: 60000 })
+}
+export const usePayment = (id: string, enabled = true) => useBusinessQuery(`payment:${id}`, () => ops.payments.get(id), !!id && enabled)
+export const useCommission = (enabled = true) => useBusinessQuery('commission', ops.payments.commission, enabled)
+export const useFindings = (status: 'open' | 'resolved' | '', enabled = true) => useBusinessQuery(`findings:${status}`, () => ops.payments.reconciliation(status), enabled)
+export const usePaymentSettings = (enabled = true) => useBusinessQuery('payment-settings', ops.payments.settings, enabled)
+export const useWeatherPricing = () => useBusinessQuery('weather-pricing', ops.payments.weather)
 export const useLegal = () => useBusinessQuery('legal', ops.legal.overview)
 export const useLegalAcceptances = () => useBusinessQuery('legal-acceptances', ops.legal.acceptances)
 export function useLegalVersions(type: string, params: Params) {
