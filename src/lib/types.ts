@@ -912,6 +912,7 @@ export interface CouponItem {
   categoryIds: string[]
   regionIds: string[]
   newUsersOnly: boolean
+  showInApp: boolean
   fundedBy: 'BUSINESS' | 'DRIVER'
   active: boolean
   redeemed: number
@@ -919,7 +920,7 @@ export interface CouponItem {
 }
 export interface CouponInput {
   code: string; title: string; type: 'PERCENT' | 'FIXED'; value: number; maxDiscount: number; minFare: number; totalLimit: number; perUserLimit: number
-  startsAt: string; endsAt: string; categoryIds: string[]; regionIds: string[]; newUsersOnly: boolean; fundedBy: 'BUSINESS' | 'DRIVER'; active: boolean
+  startsAt: string; endsAt: string; categoryIds: string[]; regionIds: string[]; newUsersOnly: boolean; showInApp?: boolean; fundedBy: 'BUSINESS' | 'DRIVER'; active: boolean
 }
 export interface CouponUse { id: string; userId: string; tripId: string; discount: number; state: 'RESERVED' | 'REDEEMED' | 'RELEASED'; at: string }
 

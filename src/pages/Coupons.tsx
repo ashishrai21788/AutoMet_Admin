@@ -39,6 +39,7 @@ function Form({ item, currency, onClose }: { item: CouponItem | null; currency: 
   const [categoryIds, setCategoryIds] = useState<string[]>(item?.categoryIds ?? [])
   const [regionIds, setRegionIds] = useState<string[]>(item?.regionIds ?? [])
   const [newUsersOnly, setNewUsersOnly] = useState(item?.newUsersOnly ?? false)
+  const [showInApp, setShowInApp] = useState(item?.showInApp ?? true)
   const [fundedBy, setFundedBy] = useState<'BUSINESS' | 'DRIVER'>(item?.fundedBy ?? 'BUSINESS')
   const [active, setActive] = useState(item?.active ?? true)
   const [busy, setBusy] = useState(false)
@@ -53,7 +54,7 @@ function Form({ item, currency, onClose }: { item: CouponItem | null; currency: 
     const body = {
       code, title, type, value: Number(value), maxDiscount: maxDiscount === '' ? 0 : Number(maxDiscount), minFare: minFare === '' ? 0 : Number(minFare),
       totalLimit: Number(totalLimit), perUserLimit: Number(perUserLimit), startsAt: new Date(startsAt).toISOString(), endsAt: new Date(endsAt).toISOString(),
-      categoryIds, regionIds, newUsersOnly, fundedBy, active,
+      categoryIds, regionIds, newUsersOnly, showInApp, fundedBy, active,
     }
     try {
       if (item) await ops.coupons.update(item.id, body)
@@ -104,6 +105,7 @@ function Form({ item, currency, onClose }: { item: CouponItem | null; currency: 
           <option value="DRIVER">The driver</option>
         </SelectField>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={newUsersOnly} onChange={(e) => setNewUsersOnly(e.target.checked)} /> Only for riders who have not completed a ride yet</label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showInApp} onChange={(e) => setShowInApp(e.target.checked)} /> Show in the app (visible in rider offers list)</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active</label>
         <p className="text-xs text-muted">The discount is worked out by the server on the ride total (fare, fees and taxes) and can never take it below zero. Riders see it before they book, and it appears on their invoice.</p>
         <div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" loading={busy}>Save</Button></div>
@@ -160,7 +162,7 @@ export default function Coupons() {
           {list.data!.items.map((c) => (
             <Card key={c.id} className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
-                <div><div className="flex items-center gap-2 font-mono text-lg font-semibold">{c.code}<Badge kind={STATE[c.state].kind}>{STATE[c.state].label}</Badge></div>{(c.title || c.description) && <div className="text-xs text-muted">{c.title || c.description}</div>}</div>
+                <div><div className="flex flex-wrap items-center gap-2 font-mono text-lg font-semibold">{c.code}<Badge kind={STATE[c.state].kind}>{STATE[c.state].label}</Badge>{!c.showInApp && <Badge kind="neutral">Private code</Badge>}{c.newUsersOnly && <Badge kind="warn">New riders</Badge>}</div>{(c.title || c.description) && <div className="text-xs text-muted">{c.title || c.description}</div>}</div>
                 <div className="text-right text-sm font-semibold">{c.type === 'PERCENT' ? `${c.value}% off${c.maxDiscount > 0 ? ` (up to ${fmtMoney(c.maxDiscount, currency)})` : ''}` : `${fmtMoney(c.value, currency)} off`}</div>
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
