@@ -21,8 +21,8 @@ export default function IntegrationList({ i }: { i: Integrations }) {
       <Integration name="Document storage" ok={i.documentStorage.configured} text={i.documentStorage.configured ? `${i.documentStorage.provider} settings are present (an upload has not been tested from here)` : `${i.documentStorage.provider} settings are missing; document uploads will fail`} />
       <Integration name="Push notifications" ok={i.pushNotifications.configured} text={i.pushNotifications.configured ? `${i.pushNotifications.provider} settings are present` : `${i.pushNotifications.provider} settings are missing; ride requests cannot reach drivers`} />
       <Integration name="Admin sign-in security" ok={i.adminSecurity.configured} text={i.adminSecurity.configured ? 'Signing key is set' : 'Signing key is missing'} />
-      <Integration name="Sign-in code delivery (SMS)" ok={false} text="Not built yet: riders and drivers cannot receive their codes by text message" />
-      <Integration name="Payments" ok={false} tone="neutral" text="Not built yet: trips are paid in cash outside the platform" />
+      <Integration name="Sign-in code delivery (SMS)" ok={i.otpDelivery?.configured ?? false} text={i.otpDelivery?.configured ? `${i.otpDelivery.provider} is configured` : 'Using test/mock OTP mode or SMS provider not configured'} />
+      <Integration name="Payments" ok={true} tone="neutral" text="Cash collections, driver UPI QR and in-app settlements active" />
     </ul>
   )
 }
